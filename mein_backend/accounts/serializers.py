@@ -26,10 +26,20 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        user = authenticate(**data)
-        if user and user.is_active:
-            return user
-        raise serializers.ValidationError("Ungültige Anmeldedaten")
+        username = data.get('username')
+        password = data.get('password')
+
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if user:
+                if user.is_active:
+                    return user
+                else:
+                    raise serializers.ValidationError("Benutzerkonto ist deaktiviert.")
+            else:
+                raise serializers.ValidationError("Ungültige Anmeldedaten.")
+        else:
+            raise serializers.ValidationError("Beide Felder müssen ausgefüllt werden.")
 
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:

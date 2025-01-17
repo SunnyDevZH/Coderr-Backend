@@ -8,7 +8,7 @@ router.register(r'users', CustomUserViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('registration/', RegisterView.as_view(), name='register'),
+    path('registration/', RegisterView.as_view(), name='registration'),
     path('login/', LoginView.as_view(), name='login'),
     path('registration-page/', registration_view, name='registration_page'),
     # Füge spezifische Endpunkte hinzu, falls benötigt

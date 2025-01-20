@@ -13,7 +13,7 @@ urlpatterns = [
     path('registration-page/', registration_view, name='registration_page'),
     # Füge spezifische Endpunkte hinzu, falls benötigt
     path('base-info/', CustomUserViewSet.as_view({'get': 'list'}), name='base-info'),
-    path('profile/<int:pk>/', CustomUserViewSet.as_view({'get': 'retrieve'}), name='profile'),
+    path('profile/<int:pk>/', CustomUserViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update'}), name='profile'),
     path('profiles/business/', CustomUserViewSet.as_view({'get': 'list_business'}), name='profiles-business'),
     path('profiles/customer/', CustomUserViewSet.as_view({'get': 'list_customer'}), name='profiles-customer'),
 ]

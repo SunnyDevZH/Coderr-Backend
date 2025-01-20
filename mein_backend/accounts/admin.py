@@ -1,13 +1,13 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser
+from .models import CustomUser, UserProfile
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ('email', 'username', 'type', 'is_staff', 'is_active',)
+    list_display = ('id', 'email', 'username', 'type', 'is_staff', 'is_active', 'token')
     list_filter = ('email', 'username', 'type', 'is_staff', 'is_active',)
     fieldsets = (
-        (None, {'fields': ('email', 'password', 'username', 'type')}),
+        (None, {'fields': ('id', 'email', 'password', 'username', 'type')}),
         ('Permissions', {'fields': ('is_staff', 'is_active')}),
     )
     add_fieldsets = (
@@ -18,6 +18,10 @@ class CustomUserAdmin(UserAdmin):
     )
     search_fields = ('email', 'username',)
     ordering = ('email',)
-    readonly_fields = ('id',)  # Make the id field read-only
+    readonly_fields = ('id', 'token')  # Make the id and token fields read-only
+
+    def token(self, obj):
+        return obj.get_token()
 
 admin.site.register(CustomUser, CustomUserAdmin)
+admin.site.register(UserProfile)

@@ -14,4 +14,6 @@ urlpatterns = [
     # Füge spezifische Endpunkte hinzu, falls benötigt
     path('base-info/', CustomUserViewSet.as_view({'get': 'list'}), name='base-info'),
     path('profile/<int:pk>/', CustomUserViewSet.as_view({'get': 'retrieve'}), name='profile'),
+    path('profiles/business/', CustomUserViewSet.as_view({'get': 'list_business'}), name='profiles-business'),
+    path('profiles/customer/', CustomUserViewSet.as_view({'get': 'list_customer'}), name='profiles-customer'),
 ]

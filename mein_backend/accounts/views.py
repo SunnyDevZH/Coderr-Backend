@@ -69,16 +69,20 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
-        pk = kwargs.get('pk')
-        instance = self.get_queryset().filter(pk=pk).first()
+        pk = kwargs.get('pk')  # Extrahiere den pk-Parameter aus den URL-Argumenten
+        if pk != str(request.user.pk):  # Überprüfe, ob der angeforderte pk mit dem pk des authentifizierten Benutzers übereinstimmt
+            return Response({"detail": "Not authorized to access this profile."}, status=status.HTTP_403_FORBIDDEN)
+        instance = self.get_queryset().filter(pk=pk).first()  # Finde den Benutzer mit dem entsprechenden pk
         if not instance:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+        serializer = self.get_serializer(instance)  # Serialisiere die Benutzerdaten
+        return Response(serializer.data)  # Gebe die Benutzerdaten als JSON-Antwort zurück
 
     def partial_update(self, request, *args, **kwargs):
-        pk = kwargs.get('pk')
-        instance = self.get_queryset().filter(pk=pk).first()
+        pk = kwargs.get('pk')  # Extrahiere den pk-Parameter aus den URL-Argumenten
+        if pk != str(request.user.pk):  # Überprüfe, ob der angeforderte pk mit dem pk des authentifizierten Benutzers übereinstimmt
+            return Response({"detail": "Not authorized to update this profile."}, status=status.HTTP_403_FORBIDDEN)
+        instance = self.get_queryset().filter(pk=pk).first()  # Finde den Benutzer mit dem entsprechenden pk
         if not instance:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         user_data = request.data.get('user', {})

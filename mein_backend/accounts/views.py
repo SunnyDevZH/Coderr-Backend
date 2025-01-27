@@ -5,8 +5,8 @@ from rest_framework import status, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
-from .serializers import RegistrationSerializer, LoginSerializer, CustomUserSerializer, UserProfileSerializer
-from .models import CustomUser, UserProfile
+from .serializers import RegistrationSerializer, LoginSerializer, CustomUserSerializer
+from .models import CustomUser
 
 # Create your views here.
 
@@ -47,7 +47,6 @@ class LoginView(APIView):
 class CustomUserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
-    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -70,33 +69,11 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         pk = kwargs.get('pk')  # Extrahiere den pk-Parameter aus den URL-Argumenten
-        if pk != str(request.user.pk):  # Überprüfe, ob der angeforderte pk mit dem pk des authentifizierten Benutzers übereinstimmt
-            return Response({"detail": "Not authorized to access this profile."}, status=status.HTTP_403_FORBIDDEN)
-        instance = self.get_queryset().filter(pk=pk).first()  # Finde den Benutzer mit dem entsprechenden pk
-        if not instance:
+        if pk is None:
+            return Response({"detail": "Invalid user ID."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            instance = self.get_queryset().get(pk=pk)  # Finde den Benutzer mit dem entsprechenden pk
+        except CustomUser.DoesNotExist:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(instance)  # Serialisiere die Benutzerdaten
-        return Response(serializer.data)  # Gebe die Benutzerdaten als JSON-Antwort zurück
-
-    def partial_update(self, request, *args, **kwargs):
-        pk = kwargs.get('pk')  # Extrahiere den pk-Parameter aus den URL-Argumenten
-        if pk != str(request.user.pk):  # Überprüfe, ob der angeforderte pk mit dem pk des authentifizierten Benutzers übereinstimmt
-            return Response({"detail": "Not authorized to update this profile."}, status=status.HTTP_403_FORBIDDEN)
-        instance = self.get_queryset().filter(pk=pk).first()  # Finde den Benutzer mit dem entsprechenden pk
-        if not instance:
-            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-        user_data = request.data.get('user', {})
-        profile_data = request.data.get('profile', {})
-
-        user_serializer = self.get_serializer(instance, data=user_data, partial=True)
-        profile_serializer = UserProfileSerializer(instance.profile, data=profile_data, partial=True)
-
-        if user_serializer.is_valid() and profile_serializer.is_valid():
-            user_serializer.save()
-            profile_serializer.save()
-            return Response(user_serializer.data)
-        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-def registration_view(request):
-    return render(request, 'registration.html')
+        return Response(serializer.data)

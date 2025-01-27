@@ -43,14 +43,8 @@ class LoginSerializer(serializers.Serializer):
         else:
             raise serializers.ValidationError("Beide Felder müssen ausgefüllt werden.")
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ['user', 'file', 'location', 'tel', 'description', 'working_hours', 'created_at']
 
 class CustomUserSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer()
-
     class Meta:
-        model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'type', 'profile']
+        model = CustomUser
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'type']

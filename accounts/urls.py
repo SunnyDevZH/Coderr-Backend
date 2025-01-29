@@ -10,10 +10,10 @@ router.register(r'users', UserViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('registration/', RegisterView.as_view(), name='registration'),
-    path('login/', TokenObtainPairView.as_view(), name='login'),
+    path('login/', LoginView.as_view(), name='login'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('base-info/', UserViewSet.as_view({'get': 'list'}), name='base-info'),
-    path('profile/<int:pk>/', UserViewSet.as_view({'get': 'retrieve'}), name='profile'),
+    path('profile/<int:pk>/', UserViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update'}), name='profile'),
     path('profiles/business/', UserViewSet.as_view({'get': 'list_business'}), name='profiles-business'),
     path('profiles/customer/', UserViewSet.as_view({'get': 'list_customer'}), name='profiles-customer'),
 ]

@@ -1,10 +1,7 @@
 # filepath: accounts/serializers.py
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 from .models import User
-
-User = get_user_model()
 
 class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -43,10 +40,10 @@ class LoginSerializer(serializers.Serializer):
         else:
             raise serializers.ValidationError("Beide Felder müssen ausgefüllt werden.")
 
-
 class UserSerializer(serializers.ModelSerializer):
     user_id = serializers.ReadOnlyField(source='id')
 
     class Meta:
         model = User
         fields = ['user_id', 'username', 'first_name', 'last_name', 'email', 'type', 'file', 'location', 'tel', 'description', 'working_hours', 'created_at']
+        read_only_fields = ['user_id', 'username', 'created_at']

@@ -17,6 +17,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Weitere Einstellungen...
 
+AUTH_USER_MODEL = 'accounts.User'
+
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
@@ -129,9 +131,6 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
-
-AUTH_USER_MODEL = 'accounts.CustomUser'
-
 
 CORS_ALLOW_ALL_ORIGINS = True
 

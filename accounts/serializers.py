@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
-from .models import CustomUser, UserProfile
+from .models import User
 
 User = get_user_model()
 
@@ -44,7 +44,9 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Beide Felder müssen ausgefüllt werden.")
 
 
-class CustomUserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
+    user_id = serializers.ReadOnlyField(source='id')
+
     class Meta:
-        model = CustomUser
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'type']
+        model = User
+        fields = ['user_id', 'username', 'first_name', 'last_name', 'email', 'type', 'file', 'location', 'tel', 'description', 'working_hours', 'created_at']

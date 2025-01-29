@@ -18,10 +18,7 @@ class CustomUserAdmin(UserAdmin):
     )
     search_fields = ('email', 'username',)
     ordering = ('email',)
-    readonly_fields = ('id', 'token')  # Make the id and token fields read-only
-
-    def token(self, obj):
-        return obj.get_token()
+    readonly_fields = ('id',)  # Entferne 'token', wenn es nicht existiert
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(UserProfile)

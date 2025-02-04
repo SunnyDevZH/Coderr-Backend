@@ -13,6 +13,6 @@ Dies ist ein Django-basiertes Backend-Projekt.
 1. Klone das Repository:
 
 ```sh
-git clone https://github.com/dein-benutzername/dein-repo.git
+git clone 
 cd dein-repo
 ```

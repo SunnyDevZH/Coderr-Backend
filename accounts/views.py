@@ -6,7 +6,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
-from .models import User
+from .models import User, Review
+from offers.models import Offer
+from django.db.models import Avg
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -72,3 +74,20 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+class BaseInfoView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        review_count = Review.objects.count()
+        average_rating = Review.objects.aggregate(Avg('rating'))['rating__avg'] or 0
+        business_profile_count = User.objects.filter(type='business').count()
+        offer_count = Offer.objects.count()
+
+        data = {
+            "review_count": review_count,
+            "average_rating": round(average_rating, 1),
+            "business_profile_count": business_profile_count,
+            "offer_count": offer_count,
+        }
+        return Response(data, status=status.HTTP_200_OK)

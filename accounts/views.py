@@ -5,7 +5,7 @@ from rest_framework import status, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
-from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
+from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer, ReviewSerializer
 from .models import User, Review
 from offers.models import Offer
 from django.db.models import Avg
@@ -91,3 +91,19 @@ class BaseInfoView(APIView):
             "offer_count": offer_count,
         }
         return Response(data, status=status.HTTP_200_OK)
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        business_user_id = self.request.query_params.get('business_user_id')
+        ordering = self.request.query_params.get('ordering', '-updated_at')
+
+        if business_user_id and business_user_id != 'undefined':
+            queryset = queryset.filter(user_id=business_user_id)
+        queryset = queryset.order_by(ordering)
+
+        return queryset

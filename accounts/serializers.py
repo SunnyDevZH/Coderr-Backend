@@ -1,7 +1,7 @@
 # filepath: accounts/serializers.py
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User
+from .models import User, Review
 
 class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -47,3 +47,9 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['user_id', 'username', 'first_name', 'last_name', 'email', 'type', 'file', 'location', 'tel', 'description', 'working_hours', 'created_at']
         read_only_fields = ['user_id', 'username', 'created_at']
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'

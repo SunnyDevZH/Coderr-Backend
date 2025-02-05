@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.decorators import action
 from .models import Order
 from .serializers import OrderSerializer
@@ -10,10 +10,12 @@ from accounts.models import User
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-   
+    
 
     def get_queryset(self):
         user = self.request.user
+        if user.is_anonymous:
+            return Order.objects.none()
         return Order.objects.filter(customer_user=user) | Order.objects.filter(business_user=user)
 
     def create(self, request, *args, **kwargs):
@@ -40,14 +42,14 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({"detail": "Only admin users can delete orders."}, status=status.HTTP_403_FORBIDDEN)
 
-    @action(detail=True, methods=['get'], url_path='order-count')
-    def order_count(self, request, pk=None):
-        business_user = get_object_or_404(User, pk=pk)
+    @action(detail=False, methods=['get'], url_path='order-count/(?P<business_user_id>[^/.]+)', permission_classes=[AllowAny])
+    def order_count(self, request, business_user_id=None):
+        business_user = get_object_or_404(User, pk=business_user_id)
         order_count = Order.objects.filter(business_user=business_user, status='in_progress').count()
         return Response({"order_count": order_count})
 
-    @action(detail=True, methods=['get'], url_path='completed-order-count')
-    def completed_order_count(self, request, pk=None):
-        business_user = get_object_or_404(User, pk=pk)
+    @action(detail=False, methods=['get'], url_path='completed-order-count/(?P<business_user_id>[^/.]+)', permission_classes=[AllowAny])
+    def completed_order_count(self, request, business_user_id=None):
+        business_user = get_object_or_404(User, pk=business_user_id)
         completed_order_count = Order.objects.filter(business_user=business_user, status='completed').count()
         return Response({"completed_order_count": completed_order_count})

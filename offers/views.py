@@ -1,14 +1,27 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermission
 from .models import Offer, OfferDetail
 from .serializers import OfferSerializer, OfferDetailSerializer
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.decorators import action
+
+
+class IsOwnerOrAdmin(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        # Nur der Besitzer oder ein Admin hat Zugriff
+        return obj.user == request.user or request.user.is_staff
 
 class OfferViewSet(viewsets.ModelViewSet):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
-
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['user', 'details__price', 'details__delivery_time_in_days']
+    search_fields = ['title', 'description']
+    ordering_fields = ['updated_at', 'details__price']
 
     def get_queryset(self):
         queryset = super().get_queryset()

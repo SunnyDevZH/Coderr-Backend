@@ -1,5 +1,8 @@
 from django.db import models
-from accounts.models import User
+from django.contrib.auth import get_user_model
+from offers.models import OfferDetail
+
+User = get_user_model()
 
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -10,6 +13,7 @@ class Order(models.Model):
 
     customer_user = models.ForeignKey(User, related_name='customer_orders', on_delete=models.CASCADE)
     business_user = models.ForeignKey(User, related_name='business_orders', on_delete=models.CASCADE)
+    offer_detail = models.ForeignKey(OfferDetail, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     revisions = models.IntegerField()
     delivery_time_in_days = models.IntegerField()
@@ -21,4 +25,4 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.title
+        return f"Order {self.id} - {self.title}"

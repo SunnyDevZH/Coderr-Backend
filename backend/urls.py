@@ -16,10 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from accounts.views import RegisterView, LoginView, BaseInfoView, UserViewSet
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('accounts.urls')),
-    path('api/', include('orders.urls')),
-    path('api/', include('offers.urls')),
+    path('api/accounts/', include('accounts.urls')),  # Präfix für Accounts
+    path('api/orders/', include('orders.urls')),      # Präfix für Orders
+    path('api/offers/', include('offers.urls')),      # Präfix für Offers
+    path('api/registration/', RegisterView.as_view(), name='registration'),  # Registrierung
+    path('api/login/', LoginView.as_view(), name='login'),  # Login
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # Token-Refresh
+    path('api/base-info/', BaseInfoView.as_view(), name='base-info'),  # Basisinformationen
+    path('api/profile/<int:pk>/', UserViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update'}), name='profile'),  # Benutzerprofil
+    path('api/profiles/business/', UserViewSet.as_view({'get': 'list_business'}), name='profiles-business'),  # Geschäftsnutzer
+    path('api/profiles/customer/', UserViewSet.as_view({'get': 'list_customer'}), name='profiles-customer'),  # Kundenprofile
+    path('api/reviews/', include('accounts.urls')),  # Reviews (falls benötigt)
 ]

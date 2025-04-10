@@ -41,13 +41,13 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Beide Felder müssen ausgefüllt werden.")
 
 class UserSerializer(serializers.ModelSerializer):
-    user_id = serializers.ReadOnlyField(source='id')
-
     class Meta:
         model = User
-        fields = ['user_id', 'username', 'first_name', 'last_name', 'email', 'type', 'file', 'location', 'tel', 'description', 'working_hours', 'created_at']
-        read_only_fields = ['user_id', 'username', 'created_at']
-
+        fields = [
+            'id', 'username', 'first_name', 'last_name', 'file', 'location',
+            'tel', 'description', 'working_hours', 'type', 'email', 'created_at'
+        ]
+        read_only_fields = ['id', 'username', 'email', 'created_at']
 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:

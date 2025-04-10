@@ -47,50 +47,70 @@ class LoginView(APIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        user_type = self.request.query_params.get('type')
-        if user_type:
-            queryset = queryset.filter(type=user_type)
-        return queryset
-
-    @action(detail=False, methods=['get'], url_path='business')
-    def list_business(self, request):
-        queryset = self.get_queryset().filter(type='business')
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'], url_path='customer')
-    def list_customer(self, request):
-        queryset = self.get_queryset().filter(type='customer')
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
-        pk = kwargs.get('pk')
-        instance = self.get_queryset().filter(pk=pk).first()
-        if not instance:
-            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        """
+        GET /profile/<int:pk>/ - Ruft die Profildetails eines Benutzers ab.
+        """
+        instance = self.get_object()
         serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        PATCH /profile/<int:pk>/ - Aktualisiert bestimmte Profildetails.
+        """
+        instance = self.get_object()
+        if request.user != instance and not request.user.is_staff:
+            return Response({"detail": "You do not have permission to edit this profile."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='business', permission_classes=[AllowAny])
+    def list_business(self, request):
+        """
+        GET /profiles/business/ - Gibt eine Liste aller Geschäftsnutzer zurück.
+        """
+        business_users = self.queryset.filter(type='business')
+        serializer = self.get_serializer(business_users, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='customer', permission_classes=[AllowAny])
+    def list_customer(self, request):
+        """
+        GET /profiles/customer/ - Gibt eine Liste aller Kundenprofile zurück.
+        """
+        customer_users = self.queryset.filter(type='customer')
+        serializer = self.get_serializer(customer_users, many=True)
         return Response(serializer.data)
 
 class BaseInfoView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
+        # Anzahl der Bewertungen
         review_count = Review.objects.count()
-        average_rating = Review.objects.aggregate(Avg('rating'))['rating__avg'] or 0
+
+        # Durchschnittliches Bewertungsergebnis
+        average_rating = Review.objects.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
+        average_rating = round(average_rating, 1)
+
+        # Anzahl der Geschäftsnutzer (Business Profile)
         business_profile_count = User.objects.filter(type='business').count()
+
+        # Anzahl der Angebote
         offer_count = Offer.objects.count()
 
-        data = {
+        # Antwort zurückgeben
+        return Response({
             "review_count": review_count,
-            "average_rating": round(average_rating, 1),
+            "average_rating": average_rating,
             "business_profile_count": business_profile_count,
             "offer_count": offer_count,
-        }
-        return Response(data, status=status.HTTP_200_OK)
+        })
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()

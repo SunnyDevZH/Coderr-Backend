@@ -47,7 +47,7 @@ class LoginView(APIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    
 
     def retrieve(self, request, *args, **kwargs):
         """

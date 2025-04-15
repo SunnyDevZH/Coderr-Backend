@@ -26,3 +26,10 @@ class OrderSerializer(serializers.ModelSerializer):
         })
 
         return super().create(validated_data)
+
+    def to_representation(self, instance):
+        # Standardwerte hinzufügen, falls bestimmte Felder fehlen
+        representation = super().to_representation(instance)
+        representation['features'] = representation.get('features', [])
+        representation['status'] = representation.get('status', 'unknown')
+        return representation

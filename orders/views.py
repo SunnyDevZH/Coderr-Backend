@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
+from rest_framework.views import APIView
 from .models import Order
 from .serializers import OrderSerializer
 from accounts.models import User
@@ -14,9 +15,10 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_anonymous:
-            return Order.objects.none()
-        return Order.objects.filter(customer_user=user) | Order.objects.filter(business_user=user)
+        if user.is_authenticated:
+            # Gibt nur Bestellungen des aktuellen Benutzers zurück
+            return Order.objects.filter(customer_user=user)
+        return Order.objects.none()  # Gibt eine leere Liste zurück, wenn der Benutzer nicht authentifiziert ist
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -54,3 +56,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         business_user = get_object_or_404(User, pk=business_user_id)
         completed_order_count = Order.objects.filter(business_user=business_user, status='completed').count()
         return Response({"completed_order_count": completed_order_count})
+
+class CustomerOrdersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        orders = Order.objects.filter(customer_user=request.user)
+        if not orders.exists():
+            # Rückgabe einer Standardantwort, wenn keine Bestellungen vorhanden sind
+            return Response({"orders": [], "message": "Keine Bestellungen gefunden."})
+        serializer = OrderSerializer(orders, many=True)
+        return Response({"orders": serializer.data})

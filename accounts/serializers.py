@@ -1,7 +1,13 @@
-# filepath: accounts/serializers.py
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import User, Review
+
+# 👇 Neuer verschachtelter User-Serializer für Kunden-/Business-Profil-Listen
+class UserNestedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['pk', 'username', 'first_name', 'last_name']
+
 
 class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -19,6 +25,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
             type=validated_data['type']
         )
         return user
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -40,14 +47,58 @@ class LoginSerializer(serializers.Serializer):
         else:
             raise serializers.ValidationError("Beide Felder müssen ausgefüllt werden.")
 
+
+# 👇 Haupt-User-Detail-Serializer (z. B. für eigenes Profil)
 class UserSerializer(serializers.ModelSerializer):
+    pk = serializers.IntegerField(source='id', read_only=True)  # Alias für `id`
+
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'first_name', 'last_name', 'file', 'location',
+            'pk', 'username', 'first_name', 'last_name', 'file', 'location',
             'tel', 'description', 'working_hours', 'type', 'email', 'created_at'
         ]
-        read_only_fields = ['id', 'username', 'email', 'created_at']
+        read_only_fields = ['pk', 'username', 'email', 'created_at']
+        extra_kwargs = {
+            'first_name': {'required': False, 'allow_null': True},
+            'last_name': {'required': False, 'allow_null': True},
+            'file': {'required': False, 'allow_null': True},
+            'location': {'required': False, 'allow_null': True},
+            'tel': {'required': False, 'allow_null': True},
+            'description': {'required': False, 'allow_null': True},
+            'working_hours': {'required': False, 'allow_null': True},
+        }
+
+# 👇 Kunden- oder Business-Profil-Serializer für Listenansichten
+class ProfileListSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()  # Benutzerinformationen verschachteln
+
+    class Meta:
+        model = User
+        fields = [
+            'user',  # Verschachteltes User-Objekt
+            'file', 'location', 'tel', 'description',
+            'working_hours', 'type'
+        ]
+
+    def get_user(self, obj):
+        """
+        Erstellt das verschachtelte `user`-Objekt.
+        """
+        if obj:
+            return {
+                'pk': obj.pk,
+                'username': obj.username or "Unbekannt",
+                'first_name': obj.first_name or "",
+                'last_name': obj.last_name or ""
+            }
+        return {
+            'pk': None,
+            'username': "Unbekannt",
+            'first_name': "",
+            'last_name': ""
+        }
+
 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:

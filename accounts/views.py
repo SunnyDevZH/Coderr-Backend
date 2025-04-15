@@ -5,10 +5,11 @@ from rest_framework import status, viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
-from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer, ReviewSerializer
 from .models import User, Review
 from offers.models import Offer
 from django.db.models import Avg
+from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer, ReviewSerializer, ProfileListSerializer
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -46,8 +47,7 @@ class LoginView(APIView):
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
-    
+    serializer_class = UserSerializer  # Standard-Serializer für Detailansichten
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -75,7 +75,7 @@ class UserViewSet(viewsets.ModelViewSet):
         GET /profiles/business/ - Gibt eine Liste aller Geschäftsnutzer zurück.
         """
         business_users = self.queryset.filter(type='business')
-        serializer = self.get_serializer(business_users, many=True)
+        serializer = ProfileListSerializer(business_users, many=True)  # Verwenden des ProfileListSerializer
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='customer', permission_classes=[AllowAny])
@@ -84,7 +84,7 @@ class UserViewSet(viewsets.ModelViewSet):
         GET /profiles/customer/ - Gibt eine Liste aller Kundenprofile zurück.
         """
         customer_users = self.queryset.filter(type='customer')
-        serializer = self.get_serializer(customer_users, many=True)
+        serializer = ProfileListSerializer(customer_users, many=True)  # Verwenden des ProfileListSerializer
         return Response(serializer.data)
 
 class BaseInfoView(APIView):

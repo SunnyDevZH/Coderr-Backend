@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from accounts.views import RegisterView, LoginView, BaseInfoView, UserViewSet
+from offers.views import OfferDetailViewSet  # Import für OfferDetailViewSet
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -24,6 +25,7 @@ urlpatterns = [
     path('api/accounts/', include('accounts.urls')),  # Präfix für Accounts
     path('api/orders/', include('orders.urls')),      # Präfix für Orders
     path('api/offers/', include('offers.urls')),      # Präfix für Offers
+    path('api/offerdetails/<int:pk>/', OfferDetailViewSet.as_view({'get': 'retrieve'}), name='offerdetails'),  # Endpunkt: /api/offerdetails/<id>/
     path('api/registration/', RegisterView.as_view(), name='registration'),  # Registrierung
     path('api/login/', LoginView.as_view(), name='login'),  # Login
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # Token-Refresh

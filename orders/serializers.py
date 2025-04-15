@@ -1,8 +1,13 @@
 from rest_framework import serializers
 from .models import Order
 from offers.models import OfferDetail
+from accounts.serializers import UserSerializer
+
 
 class OrderSerializer(serializers.ModelSerializer):
+    customer_user = UserSerializer(read_only=True)
+    business_user = UserSerializer(read_only=True)
+    
     class Meta:
         model = Order
         fields = '__all__'

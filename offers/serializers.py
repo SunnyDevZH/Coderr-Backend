@@ -1,8 +1,12 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from .models import Offer, OfferDetail
+from accounts.serializers import UserSerializer
+
 
 class OfferDetailSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)  # <--- DAS ist wichtig
+    
     class Meta:
         model = OfferDetail
         fields = '__all__'

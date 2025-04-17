@@ -60,14 +60,15 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['pk', 'username', 'email', 'created_at']
         extra_kwargs = {
-            'first_name': {'required': False, 'allow_null': True},
-            'last_name': {'required': False, 'allow_null': True},
-            'file': {'required': False, 'allow_null': True},
-            'location': {'required': False, 'allow_null': True},
-            'tel': {'required': False, 'allow_null': True},
-            'description': {'required': False, 'allow_null': True},
-            'working_hours': {'required': False, 'allow_null': True},
+            'first_name': {'required': False, 'allow_null': True, 'default': 'Unbekannt'},
+            'last_name': {'required': False, 'allow_null': True, 'default': 'Unbekannt'},
+            'file': {'required': False, 'allow_null': True, 'default': 'keine_datei'},  # Beispiel für Standardwert
+            'location': {'required': False, 'allow_null': True, 'default': 'keine_Adresse'},  # Beispiel für Standardwert
+            'tel': {'required': False, 'allow_null': True, 'default': 'keine_Telefonnummer'},  # Beispiel für Standardwert
+            'description': {'required': False, 'allow_null': True, 'default': 'keine_Beschreibung'},  # Beispiel für Standardwert
+            'working_hours': {'required': False, 'allow_null': True, 'default': 'keine_Arbeitszeiten'},  # Beispiel für Standardwert
         }
+
 
 # 👇 Kunden- oder Business-Profil-Serializer für Listenansichten
 class ProfileListSerializer(serializers.ModelSerializer):
@@ -82,22 +83,25 @@ class ProfileListSerializer(serializers.ModelSerializer):
         ]
 
     def get_user(self, obj):
-        """
-        Erstellt das verschachtelte `user`-Objekt.
-        """
-        if obj:
-            return {
-                'pk': obj.pk,
-                'username': obj.username or "Unbekannt",
-                'first_name': obj.first_name or "",
-                'last_name': obj.last_name or ""
-            }
         return {
-            'pk': None,
-            'username': "Unbekannt",
-            'first_name': "",
-            'last_name': ""
+            'pk': getattr(obj, 'pk', None),
+            'username': getattr(obj, 'username', "Unbekannt") or "Unbekannt",
+            'first_name': getattr(obj, 'first_name', "Unbekannt") or "Unbekannt",
+            'last_name': getattr(obj, 'last_name', "Unbekannt") or "Unbekannt"
         }
+
+    def to_representation(self, instance):
+        # Standardwerte setzen, falls Felder null sind
+        representation = super().to_representation(instance)
+        
+        # Überprüfen und Standardwerte setzen, falls null
+        representation['file'] = representation.get('file') if representation.get('file') is not None else 'keine_datei'
+        representation['location'] = representation.get('location') if representation.get('location') is not None else 'keine_Adresse'
+        representation['tel'] = representation.get('tel') if representation.get('tel') is not None else 'keine_Telefonnummer'
+        representation['description'] = representation.get('description') if representation.get('description') is not None else 'keine_Beschreibung'
+        representation['working_hours'] = representation.get('working_hours') if representation.get('working_hours') is not None else 'keine_Arbeitszeiten'
+        
+        return representation
 
 
 class ReviewSerializer(serializers.ModelSerializer):

@@ -110,3 +110,26 @@ class CustomerOrdersView(APIView):
             return Response({"orders": [], "message": "Keine Bestellungen gefunden."})
         serializer = OrderSerializer(orders, many=True)
         return Response({"orders": serializer.data})
+
+class OrderCountView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, business_user_id):
+        """
+        Gibt die Anzahl der laufenden Bestellungen (Status: in_progress) eines Geschäftsnutzers zurück.
+        """
+        business_user = get_object_or_404(User, pk=business_user_id)
+        order_count = Order.objects.filter(user=business_user, status='in_progress').count()
+        return Response({"order_count": order_count})
+
+
+class CompletedOrderCountView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, business_user_id):
+        """
+        Gibt die Anzahl der abgeschlossenen Bestellungen (Status: completed) eines Geschäftsnutzers zurück.
+        """
+        business_user = get_object_or_404(User, pk=business_user_id)
+        completed_order_count = Order.objects.filter(user=business_user, status='completed').count()
+        return Response({"completed_order_count": completed_order_count})

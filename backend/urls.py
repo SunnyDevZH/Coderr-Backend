@@ -17,7 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from accounts.views import RegisterView, LoginView, BaseInfoView, UserViewSet, ReviewViewSet
-from offers.views import OfferDetailViewSet  # Import für OfferDetailViewSet
+from offers.views import OfferDetailViewSet
+from orders.views import OrderViewSet, OrderCountView, CompletedOrderCountView 
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -41,6 +42,9 @@ urlpatterns = [
     # Orders / Offers #
 
     path('api/orders/', include('orders.urls')),
+    path('api/orders/order-count/<int:business_user_id>/', OrderCountView.as_view(), name='order-count'),
+    path('api/orders/completed-order-count/<int:business_user_id>/', CompletedOrderCountView.as_view(), name='completed-order-count'),
+
     path('api/offers/', include('offers.urls')),
     path('api/offerdetails/<int:pk>/', OfferDetailViewSet.as_view({'get': 'retrieve'}), name='offerdetails'),
 ]

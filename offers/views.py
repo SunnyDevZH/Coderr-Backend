@@ -1,34 +1,27 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermission, AllowAny
+from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from .models import Offer, OfferDetail
 from .serializers import OfferSerializer, OfferDetailSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.decorators import action
 
-
-class IsOwnerOrAdmin(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        # Nur der Besitzer oder ein Admin hat Zugriff
-        return obj.user == request.user or request.user.is_staff
-
 class OfferViewSet(viewsets.ModelViewSet):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['user', 'details__price', 'details__delivery_time_in_days']
+    filterset_fields = ['details__price', 'details__delivery_time_in_days']
     search_fields = ['title', 'description']
     ordering_fields = ['updated_at', 'details__price']
 
     def get_permissions(self):
         """
-        Setzt die Berechtigungen basierend auf der Anfrage.
+        Nur authentifizierte Benutzer haben Zugriff auf diese Endpunkte.
         """
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsAuthenticated()]  # Authentifizierung erforderlich
-        return [AllowAny()]  # GET-Endpunkte sind öffentlich zugänglich
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         """
@@ -63,22 +56,32 @@ class OfferViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """
-        Erstellt ein neues Angebot.
+        Erstellt ein neues Angebot mit dem authentifizierten Benutzer.
         """
+
+        print("👤 request.user:", request.user)
+        print("🔐 request.auth:", request.auth)
+
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication credentials were not provided."},
+                        status=status.HTTP_401_UNAUTHORIZED)
+
         data = request.data
-        data['user'] = request.user.id  # Setzt den Benutzer als Eigentümer
         serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
+
+        if not serializer.is_valid():
+            print("Validation errors:", serializer.errors)  # Debugging-Ausgabe
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
     def partial_update(self, request, *args, **kwargs):
         """
         Aktualisiert ein Angebot teilweise.
         """
         instance = self.get_object()
-        if instance.user != request.user and not request.user.is_staff:
-            return Response({"detail": "You do not have permission to edit this offer."}, status=status.HTTP_403_FORBIDDEN)
         return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
@@ -86,13 +89,12 @@ class OfferViewSet(viewsets.ModelViewSet):
         Löscht ein Angebot und die zugehörigen Angebotsdetails.
         """
         instance = self.get_object()
-        if request.user != instance.user and not request.user.is_staff:
-            return Response({"detail": "You do not have permission to delete this offer."}, status=status.HTTP_403_FORBIDDEN)
         instance.details.all().delete()  # Löscht die zugehörigen Angebotsdetails
         instance.delete()
         return Response({}, status=status.HTTP_204_NO_CONTENT)
 
+
 class OfferDetailViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny]  # Alle Endpunkte sind öffentlich zugänglich

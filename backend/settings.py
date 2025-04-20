@@ -146,10 +146,10 @@ AUTHENTICATION_BACKENDS = [
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=100),  # Lebensdauer des Access Tokens
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Lebensdauer des Access Tokens
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Lebensdauer des Refresh Tokens
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': True,
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
     'UPDATE_LAST_LOGIN': False,
 
     'ALGORITHM': 'HS256',

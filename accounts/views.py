@@ -9,6 +9,9 @@ from .models import User, Review
 from offers.models import Offer
 from django.db.models import Avg
 from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer, ReviewSerializer, ProfileListSerializer
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
 
 class RegisterView(APIView):
@@ -17,14 +20,14 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
-            refresh = RefreshToken.for_user(user)
+            user = serializer.save()  # Benutzer wird über den Serializer erstellt
+            token, created = Token.objects.get_or_create(user=user)  # Token für den Benutzer erstellen
             return Response({
-                'token': str(refresh.access_token),
+                'token': token.key,  # Token zurückgeben
                 'username': user.username,
                 'email': user.email,
-                'user_id': user.user_id,
-                'type': user.type
+                'user_id': user.id,  # Benutzer-ID zurückgeben
+                'type': user.type  # Benutzer-Typ zurückgeben (falls vorhanden)
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -46,7 +49,7 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = get_user_model().objects.all()
     serializer_class = UserSerializer  # Standard-Serializer für Detailansichten
 
     def retrieve(self, request, *args, **kwargs):

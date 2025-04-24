@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from django.contrib.auth import authenticate
-from .models import User, Review
+from django.contrib.auth import authenticate, get_user_model
+from .models import Review
+
+User = get_user_model()
 
 # 👇 Neuer verschachtelter User-Serializer für Kunden-/Business-Profil-Listen
 class UserNestedSerializer(serializers.ModelSerializer):
@@ -11,18 +13,18 @@ class UserNestedSerializer(serializers.ModelSerializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-    type = serializers.ChoiceField(choices=User.USER_TYPE_CHOICES)
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'type')
+        fields = ['username', 'password', 'email', 'type']  # Passe die Felder an dein Modell an
 
     def create(self, validated_data):
+        # Benutzer mit den validierten Daten erstellen
         user = User.objects.create_user(
             username=validated_data['username'],
-            email=validated_data['email'],
             password=validated_data['password'],
-            type=validated_data['type']
+            email=validated_data.get('email'),
+            type=validated_data.get('type', 'customer')  # Standardwert 'customer'
         )
         return user
 

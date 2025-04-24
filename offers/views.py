@@ -2,24 +2,22 @@ from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 from .models import Offer, OfferDetail
 from .serializers import OfferSerializer, OfferDetailSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from .permissions import IsBusinessUser  # ⬅️ NEU
+
 
 class OfferViewSet(viewsets.ModelViewSet):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
+    authentication_classes = [TokenAuthentication]  # TokenAuthentication verwenden
+    permission_classes = [IsAuthenticated]  # Nur authentifizierte Benutzer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['details__price', 'details__delivery_time_in_days']
     search_fields = ['title', 'description']
     ordering_fields = ['updated_at', 'details__price']
-
-    def get_permissions(self):
-        if self.action == 'create':
-            return [IsAuthenticated(), IsBusinessUser()]
-        return [IsAuthenticated()]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -49,14 +47,10 @@ class OfferViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        print("👤 request.user:", request.user)
-        print("🔐 request.auth:", request.auth)
-
         data = request.data
         serializer = self.get_serializer(data=data)
 
         if not serializer.is_valid():
-            print("Validation errors:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_create(serializer)
@@ -76,4 +70,5 @@ class OfferViewSet(viewsets.ModelViewSet):
 class OfferDetailViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailSerializer
-    permission_classes = [IsAuthenticated]  # Optional anpassen
+    authentication_classes = [TokenAuthentication]  # TokenAuthentication verwenden
+    permission_classes = [IsAuthenticated]  # Nur authentifizierte Benutzer

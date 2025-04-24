@@ -19,7 +19,7 @@ from django.urls import path, include
 from accounts.views import RegisterView, LoginView, BaseInfoView, UserViewSet, ReviewViewSet
 from offers.views import OfferDetailViewSet
 from orders.views import OrderViewSet, OrderCountView, CompletedOrderCountView 
-from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
 
@@ -31,7 +31,6 @@ urlpatterns = [
 
     path('api/registration/', RegisterView.as_view(), name='registration'),
     path('api/login/', LoginView.as_view(), name='login'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/base-info/', BaseInfoView.as_view(), name='base-info'),
     path('api/reviews/', ReviewViewSet.as_view({'get': 'list', 'post': 'create'}), name='reviews'), 
 
@@ -47,4 +46,8 @@ urlpatterns = [
 
     path('api/offers/', include('offers.urls')),
     path('api/offerdetails/<int:pk>/', OfferDetailViewSet.as_view({'get': 'retrieve'}), name='offerdetails'),
+
+    # Token Authentication #
+
+    path('api/token/', obtain_auth_token, name='api_token_auth'),
 ]

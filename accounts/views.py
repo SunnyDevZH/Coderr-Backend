@@ -94,6 +94,9 @@ class BaseInfoView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
+        # Benutzerdefiniertes User-Modell abrufen
+        User = get_user_model()
+
         # Anzahl der Bewertungen
         review_count = Review.objects.count()
 

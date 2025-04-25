@@ -7,6 +7,7 @@ from .models import Offer, OfferDetail
 from .serializers import OfferSerializer, OfferDetailSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.exceptions import NotFound
 
 
 class OfferViewSet(viewsets.ModelViewSet):
@@ -44,13 +45,15 @@ class OfferViewSet(viewsets.ModelViewSet):
         if ordering:
             queryset = queryset.order_by(ordering)
 
+        print("Queryset:", queryset)  # Debugging hinzufügen
         return queryset
 
     def create(self, request, *args, **kwargs):
-        data = request.data
-        serializer = self.get_serializer(data=data)
+        print("Request Data:", request.data)  # Debugging hinzufügen
+        serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
+            print("Validation Errors:", serializer.errors)  # Debugging hinzufügen
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_create(serializer)
@@ -66,9 +69,23 @@ class OfferViewSet(viewsets.ModelViewSet):
         instance.delete()
         return Response({}, status=status.HTTP_204_NO_CONTENT)
 
+    def list(self, request, *args, **kwargs):
+        """
+        Gibt eine Liste aller Angebote zurück. Wenn keine Angebote vorhanden sind, wird ein leeres Array zurückgegeben.
+        """
+        queryset = self.get_queryset()
+        if not queryset.exists():
+            return Response([], status=status.HTTP_200_OK)  # Leeres Array zurückgeben
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
 
 class OfferDetailViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailSerializer
     authentication_classes = [TokenAuthentication]  # TokenAuthentication verwenden
     permission_classes = [IsAuthenticated]  # Nur authentifizierte Benutzer
+
+    def retrieve(self, request, *args, **kwargs):
+        print("Offer ID:", kwargs.get('pk'))  # Debugging hinzufügen
+        return super().retrieve(request, *args, **kwargs)

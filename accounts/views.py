@@ -12,6 +12,7 @@ from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate
 
 
 class RegisterView(APIView):
@@ -35,18 +36,19 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data
-            refresh = RefreshToken.for_user(user)
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(username=username, password=password)
+        if user:
+            token, created = Token.objects.get_or_create(user=user)
             return Response({
-                'token': str(refresh.access_token),
-                'username': user.username,
-                'email': user.email,
-                'user_id': user.user_id,
-                'type': user.type
+                "token": token.key,
+                "username": user.username,
+                "email": user.email,  # Email hinzufügen
+                "user_id": user.id,
+                "type": user.type  # Benutzer-Typ hinzufügen
             }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = get_user_model().objects.all()

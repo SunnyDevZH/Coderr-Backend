@@ -13,17 +13,20 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
-from rest_framework import viewsets
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from .models import Review
-from .serializers import ReviewSerializer
 
 
 class RegisterView(APIView):
+    """
+    API-Endpunkt für die Benutzerregistrierung.
+    - Erstellt einen neuen Benutzer basierend auf den übermittelten Daten.
+    - Gibt ein Authentifizierungstoken und Benutzerdetails zurück.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
+        """
+        POST /register/ - Registriert einen neuen Benutzer.
+        """
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()  # Benutzer wird über den Serializer erstellt
@@ -37,10 +40,19 @@ class RegisterView(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class LoginView(APIView):
+    """
+    API-Endpunkt für die Benutzeranmeldung.
+    - Authentifiziert den Benutzer basierend auf den übermittelten Anmeldedaten.
+    - Gibt ein Authentifizierungstoken und Benutzerdetails zurück.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
+        """
+        POST /login/ - Meldet einen Benutzer an.
+        """
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(username=username, password=password)
@@ -55,7 +67,13 @@ class LoginView(APIView):
             }, status=status.HTTP_200_OK)
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet für die Verwaltung von Benutzerprofilen.
+    - Unterstützt CRUD-Operationen für Benutzer.
+    - Enthält zusätzliche Endpunkte für Geschäftsnutzer und Kunden.
+    """
     queryset = get_user_model().objects.all()
     serializer_class = UserSerializer  # Standard-Serializer für Detailansichten
 
@@ -97,10 +115,18 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = ProfileListSerializer(customer_users, many=True)  # Verwenden des ProfileListSerializer
         return Response(serializer.data)
 
+
 class BaseInfoView(APIView):
+    """
+    API-Endpunkt für allgemeine Statistiken und Informationen.
+    - Gibt Statistiken zu Bewertungen, Geschäftsnutzern und Angeboten zurück.
+    """
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
+        """
+        GET /base-info/ - Ruft allgemeine Statistiken ab.
+        """
         # Benutzerdefiniertes User-Modell abrufen
         User = get_user_model()
 
@@ -125,13 +151,24 @@ class BaseInfoView(APIView):
             "offer_count": offer_count,
         })
 
+
 class ReviewViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet für die Verwaltung von Bewertungen (Reviews).
+    - Unterstützt CRUD-Operationen für Bewertungen.
+    - Enthält zusätzliche Filter- und Sortierfunktionen.
+    """
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [AllowAny]
-    pagination_class = None  
+    pagination_class = None  # Deaktiviert die Paginierung
 
     def get_queryset(self):
+        """
+        Gibt das Queryset zurück, das für die aktuelle Anfrage verwendet wird.
+        - Filtert nach `business_user_id`, falls angegeben.
+        - Sortiert die Ergebnisse basierend auf dem `ordering`-Parameter.
+        """
         queryset = super().get_queryset()
         business_user_id = self.request.query_params.get('business_user_id')
         ordering = self.request.query_params.get('ordering', '-updated_at')
@@ -141,15 +178,20 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return queryset.order_by(ordering)
 
     def list(self, request, *args, **kwargs):
+        """
+        GET /reviews/ - Gibt eine Liste aller Bewertungen zurück.
+        """
         queryset = self.get_queryset()
         serialized = self.get_serializer(queryset, many=True)
-        return Response(serialized.data)  # 🔥 Nur das Array, kein Wrapper
+        return Response(serialized.data)  # Gibt nur das Array zurück, ohne Wrapper
 
     @action(detail=False, methods=['post'])
     def create_review(self, request):
+        """
+        POST /reviews/create_review/ - Erstellt eine neue Bewertung.
+        """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
- 

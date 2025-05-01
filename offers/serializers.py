@@ -6,8 +6,13 @@ from .models import Offer, OfferDetail
 # Hole das benutzerdefinierte User-Modell
 User = get_user_model()
 
-# Kurze Version für OfferDetail für List-View (id + url)
+
 class OfferDetailShortSerializer(serializers.ModelSerializer):
+    """
+    Serializer für die Kurzversion von Angebotsdetails (OfferDetail).
+    - Wird in der Angebotsliste verwendet, um nur die ID und die URL der Details darzustellen.
+    """
+
     url = serializers.SerializerMethodField()
 
     class Meta:
@@ -15,17 +20,32 @@ class OfferDetailShortSerializer(serializers.ModelSerializer):
         fields = ['id', 'url']
 
     def get_url(self, obj):
+        """
+        Generiert die vollständige URL für ein Angebotsdetail.
+        - Verwendet den aktuellen Request-Kontext.
+        """
         request = self.context.get('request')
         return request.build_absolute_uri(f'/api/offerdetails/{obj.id}/')
 
 
-# Volle Version für OfferDetail für Detail-View (ohne url!)
 class OfferDetailFullSerializer(serializers.ModelSerializer):
+    """
+    Serializer für die vollständige Darstellung von Angebotsdetails (OfferDetail).
+    - Wird verwendet, um alle relevanten Felder eines Angebotsdetails darzustellen.
+    """
+
     class Meta:
         model = OfferDetail
         fields = ['id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
 
     def validate(self, data):
+        """
+        Validiert die Eingabedaten für ein Angebotsdetail.
+        - `offer_type`: Muss einer der Werte 'basic', 'standard' oder 'premium' sein.
+        - `delivery_time_in_days`: Muss eine positive Zahl sein.
+        - `revisions`: Muss -1 oder größer sein.
+        - `features`: Mindestens ein Feature muss angegeben werden.
+        """
         if data['offer_type'] not in ['basic', 'standard', 'premium']:
             raise ValidationError("Invalid offer type. Must be 'basic', 'standard', or 'premium'.")
         if data['delivery_time_in_days'] <= 0:
@@ -37,8 +57,13 @@ class OfferDetailFullSerializer(serializers.ModelSerializer):
         return data
 
 
-# Serializer für Offer List
 class OfferListSerializer(serializers.ModelSerializer):
+    """
+    Serializer für die Liste von Angeboten (Offer).
+    - Wird verwendet, um eine kompakte Darstellung von Angeboten zu liefern.
+    - Enthält grundlegende Felder und eine Kurzversion der Angebotsdetails.
+    """
+
     user_details = serializers.SerializerMethodField()
     details = OfferDetailShortSerializer(many=True, read_only=True)
 
@@ -50,6 +75,10 @@ class OfferListSerializer(serializers.ModelSerializer):
         ]
 
     def get_user_details(self, obj):
+        """
+        Gibt die Benutzerdetails des Angebotsbesitzers zurück.
+        - Enthält den Vornamen, Nachnamen und Benutzernamen.
+        """
         user = obj.user
         return {
             "first_name": user.first_name or "Unbekannt",
@@ -58,9 +87,14 @@ class OfferListSerializer(serializers.ModelSerializer):
         }
 
 
-# Serializer für Offer Detail
 class OfferSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, write_only=True)  # Hier machen wir user als nicht erforderlich
+    """
+    Serializer für die vollständige Darstellung eines Angebots (Offer).
+    - Wird verwendet, um alle Details eines Angebots darzustellen.
+    - Unterstützt die Erstellung und Aktualisierung von Angeboten.
+    """
+
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, write_only=True)
     user_details = serializers.SerializerMethodField()
     details = OfferDetailFullSerializer(many=True, read_only=True)
 
@@ -72,6 +106,10 @@ class OfferSerializer(serializers.ModelSerializer):
         ]
 
     def get_user_details(self, obj):
+        """
+        Gibt die Benutzerdetails des Angebotsbesitzers zurück.
+        - Enthält den Vornamen, Nachnamen und Benutzernamen.
+        """
         user = obj.user
         return {
             "first_name": user.first_name or "Unbekannt",

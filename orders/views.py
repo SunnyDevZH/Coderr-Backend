@@ -53,31 +53,15 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, *args, **kwargs):
-        """
-        Aktualisiert den Status einer Bestellung.
-        Nur der Kunde, Geschäftskunde oder Admin kann den Status ändern.
-        """
-        # Bestellinstanz abrufen
         instance = self.get_object()
 
-        # Berechtigungsprüfung: Nur der Kunde oder Geschäftskunde darf den Status ändern
         if instance.customer_user != request.user and instance.business_user != request.user and not request.user.is_staff:
+            print("Permission denied: User is not the customer, business user, or an admin.")
             return Response({"detail": "You do not have permission to edit this order."}, status=status.HTTP_403_FORBIDDEN)
-
-        # Sicherstellen, dass nur das 'status'-Feld geändert wird
-        if not set(request.data.keys()).issubset({'status'}):
-            return Response({"detail": "You can only update the 'status' field."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Statuswert aus dem Request
-        new_status = request.data.get('status')
-
-        # Überprüfen, ob der Status gültig ist
-        valid_statuses = ['in_progress', 'completed', 'cancelled']
-        if new_status not in valid_statuses:
-            return Response({"detail": "Invalid status value. Allowed values are 'in_progress', 'completed', 'cancelled'."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Wenn alle Prüfungen bestanden sind, rufe die super-Methode auf, um die Bestellung zu aktualisieren
+    
+        print(f"Updating order {instance.id} to status {request.data.get('status')}")
         return super().partial_update(request, *args, **kwargs)
+
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -120,7 +104,6 @@ class CustomerOrdersView(APIView):
     def get(self, request):
         orders = Order.objects.filter(customer_user=request.user)
         if not orders.exists():
-            # Rückgabe einer Standardantwort, wenn keine Bestellungen vorhanden sind
             return Response({"orders": [], "message": "Keine Bestellungen gefunden."})
         serializer = OrderSerializer(orders, many=True)
         return Response({"orders": serializer.data})

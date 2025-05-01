@@ -24,6 +24,7 @@ class OfferViewSet(viewsets.ModelViewSet):
         return OfferSerializer
 
     def perform_create(self, serializer):
+        # Setzt den authentifizierten Benutzer als den User für das neue Angebot
         serializer.save(user=self.request.user)
 
     def get_queryset(self):
@@ -42,16 +43,21 @@ class OfferViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        print("Request Data:", request.data)
+        print("Request Data:", request.data)  # Debugging: Gibt die Request-Daten aus
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            print("Validation Errors:", serializer.errors)
+            print("Validation Errors:", serializer.errors)  # Fehler beim Validieren
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, *args, **kwargs):
+        print("Partial Update Request Data:", request.data)  # Debugging: Gibt die Request-Daten aus
         return super().partial_update(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        print("Update Request Data:", request.data)  # Debugging: Gibt die Request-Daten aus
+        return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -67,5 +73,5 @@ class OfferDetailViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
-        print("Offer ID:", kwargs.get('pk'))
+        print("Offer ID:", kwargs.get('pk'))  # Debugging: Gibt die Offer-ID aus
         return super().retrieve(request, *args, **kwargs)

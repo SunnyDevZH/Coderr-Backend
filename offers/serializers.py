@@ -1,7 +1,10 @@
+from django.contrib.auth import get_user_model  # Verwende get_user_model statt User direkt zu importieren
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from .models import Offer, OfferDetail
 
+# Hole das benutzerdefinierte User-Modell
+User = get_user_model()
 
 # Kurze Version für OfferDetail für List-View (id + url)
 class OfferDetailShortSerializer(serializers.ModelSerializer):
@@ -57,6 +60,7 @@ class OfferListSerializer(serializers.ModelSerializer):
 
 # Serializer für Offer Detail
 class OfferSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, write_only=True)  # Hier machen wir user als nicht erforderlich
     user_details = serializers.SerializerMethodField()
     details = OfferDetailFullSerializer(many=True, read_only=True)
 

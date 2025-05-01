@@ -52,12 +52,12 @@ class LoginSerializer(serializers.Serializer):
 
 # 👇 Haupt-User-Detail-Serializer (z. B. für eigenes Profil)
 class UserSerializer(serializers.ModelSerializer):
-    pk = serializers.IntegerField(source='id', read_only=True)  # Alias für `id`
+    user = serializers.IntegerField(source='id', read_only=True)  # Alias für `id`
 
     class Meta:
         model = User
         fields = [
-            'pk', 'username', 'first_name', 'last_name', 'file', 'location',
+            'user', 'username', 'first_name', 'last_name', 'file', 'location',
             'tel', 'description', 'working_hours', 'type', 'email', 'created_at'
         ]
         read_only_fields = ['pk', 'username', 'email', 'created_at']

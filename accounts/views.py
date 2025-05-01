@@ -125,12 +125,11 @@ class BaseInfoView(APIView):
             "offer_count": offer_count,
         })
 
-
-
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [AllowAny]
+    pagination_class = None  
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -139,50 +138,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
         if business_user_id and business_user_id != 'undefined':
             queryset = queryset.filter(user_id=business_user_id)
-        queryset = queryset.order_by(ordering)
-        return queryset
+        return queryset.order_by(ordering)
 
     def list(self, request, *args, **kwargs):
-        """
-        Überladen der `list()` Methode, um die Antworten im gewünschten Format zurückzugeben:
-        Immer ein Array im 'results' Key, auch wenn keine Bewertungen vorhanden sind.
-        """
         queryset = self.get_queryset()
-    
-     # Serialisieren der Daten
-        reviews_data = self.get_serializer(queryset, many=True).data
+        serialized = self.get_serializer(queryset, many=True)
+        return Response(serialized.data)  # 🔥 Nur das Array, kein Wrapper
 
-    # Erstelle die Antwort im gewünschten Format
-        response_data = {
-            "count": len(reviews_data),
-            "next": None,  # Hier könnte eine Paginierungslösung eingefügt werden
-            "previous": None,
-            "results": reviews_data  # Immer ein Array, auch wenn leer
-        }
-
-        return Response(response_data)
-    
     @action(detail=False, methods=['post'])
     def create_review(self, request):
-        """
-        Erstellt eine neue Bewertung und gibt sie im richtigen Format zurück.
-        """
         serializer = self.get_serializer(data=request.data)
-    
         if serializer.is_valid():
-            serializer.save()  # Speichert die neue Bewertung
-            return Response({
-                "id": serializer.data['id'],
-                "business_user": serializer.data['business_user'],
-                "reviewer": serializer.data['reviewer'],
-                "rating": serializer.data['rating'],
-                "description": serializer.data['description'],
-                "created_at": serializer.data['created_at'],
-                "updated_at": serializer.data['updated_at'],
-            }, status=status.HTTP_201_CREATED)
-    
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
  

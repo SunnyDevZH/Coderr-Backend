@@ -41,8 +41,8 @@ urlpatterns = [
     # Orders / Offers #
 
     path('api/orders/', include('orders.urls')),
-    path('api/orders/order-count/<int:business_user_id>/', OrderCountView.as_view(), name='order-count'),
-    path('api/orders/completed-order-count/<int:business_user_id>/', CompletedOrderCountView.as_view(), name='completed-order-count'),
+    path('api/order-count/<int:business_user_id>/', OrderCountView.as_view(), name='order-count'),
+    path('api/completed-order-count/<int:business_user_id>/', CompletedOrderCountView.as_view(), name='completed-order-count'),
 
     path('api/offers/', include('offers.urls')),
     path('api/offerdetails/<int:pk>/', OfferDetailViewSet.as_view({'get': 'retrieve'}), name='offerdetails'),

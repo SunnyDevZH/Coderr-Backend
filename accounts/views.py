@@ -120,6 +120,9 @@ class BaseInfoView(APIView):
             "offer_count": offer_count,
         })
 
+from rest_framework.response import Response
+from rest_framework.decorators import action
+
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -133,5 +136,25 @@ class ReviewViewSet(viewsets.ModelViewSet):
         if business_user_id and business_user_id != 'undefined':
             queryset = queryset.filter(user_id=business_user_id)
         queryset = queryset.order_by(ordering)
-
         return queryset
+
+    @action(detail=False, methods=['get'])
+    def list_reviews(self, request):
+        # Query-Parameter auslesen
+        business_user_id = request.query_params.get('business_user_id')
+        ordering = request.query_params.get('ordering', '-updated_at')
+
+        # Reviews filtern und sortieren
+        queryset = Review.objects.all()
+        if business_user_id:
+            queryset = queryset.filter(user_id=business_user_id)
+        queryset = queryset.order_by(ordering)
+
+        # Serialisieren der Daten
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'count': queryset.count(),
+            'next': None,  # Falls du Paginierung nutzen möchtest
+            'previous': None,
+            'results': serializer.data
+        })

@@ -21,11 +21,10 @@ class OfferDetailShortSerializer(serializers.ModelSerializer):
 
     def get_url(self, obj):
         """
-        Generiert die vollständige URL für ein Angebotsdetail.
-        - Verwendet den aktuellen Request-Kontext.
+        Gibt nur den relativen Pfad zur Detailansicht zurück (z. B. /offerdetails/1/),
+        wie in der API-Dokumentation gefordert.
         """
-        request = self.context.get('request')
-        return request.build_absolute_uri(f'/api/offerdetails/{obj.id}/')
+        return f"/offerdetails/{obj.id}/"
 
 
 class OfferDetailFullSerializer(serializers.ModelSerializer):

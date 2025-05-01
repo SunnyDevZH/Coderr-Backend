@@ -13,6 +13,11 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
+from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from .models import Review
+from .serializers import ReviewSerializer
 
 
 class RegisterView(APIView):
@@ -120,8 +125,7 @@ class BaseInfoView(APIView):
             "offer_count": offer_count,
         })
 
-from rest_framework.response import Response
-from rest_framework.decorators import action
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
@@ -138,23 +142,47 @@ class ReviewViewSet(viewsets.ModelViewSet):
         queryset = queryset.order_by(ordering)
         return queryset
 
-    @action(detail=False, methods=['get'])
-    def list_reviews(self, request):
-        # Query-Parameter auslesen
-        business_user_id = request.query_params.get('business_user_id')
-        ordering = request.query_params.get('ordering', '-updated_at')
+    def list(self, request, *args, **kwargs):
+        """
+        Überladen der `list()` Methode, um die Antworten im gewünschten Format zurückzugeben:
+        Immer ein Array im 'results' Key, auch wenn keine Bewertungen vorhanden sind.
+        """
+        queryset = self.get_queryset()
+    
+     # Serialisieren der Daten
+        reviews_data = self.get_serializer(queryset, many=True).data
 
-        # Reviews filtern und sortieren
-        queryset = Review.objects.all()
-        if business_user_id:
-            queryset = queryset.filter(user_id=business_user_id)
-        queryset = queryset.order_by(ordering)
+    # Erstelle die Antwort im gewünschten Format
+        response_data = {
+            "count": len(reviews_data),
+            "next": None,  # Hier könnte eine Paginierungslösung eingefügt werden
+            "previous": None,
+            "results": reviews_data  # Immer ein Array, auch wenn leer
+        }
 
-        # Serialisieren der Daten
-        serializer = self.get_serializer(queryset, many=True)
-        return Response({
-            'count': queryset.count(),
-            'next': None,  # Falls du Paginierung nutzen möchtest
-            'previous': None,
-            'results': serializer.data
-        })
+        return Response(response_data)
+    
+    @action(detail=False, methods=['post'])
+    def create_review(self, request):
+        """
+        Erstellt eine neue Bewertung und gibt sie im richtigen Format zurück.
+        """
+        serializer = self.get_serializer(data=request.data)
+    
+        if serializer.is_valid():
+            serializer.save()  # Speichert die neue Bewertung
+            return Response({
+                "id": serializer.data['id'],
+                "business_user": serializer.data['business_user'],
+                "reviewer": serializer.data['reviewer'],
+                "rating": serializer.data['rating'],
+                "description": serializer.data['description'],
+                "created_at": serializer.data['created_at'],
+                "updated_at": serializer.data['updated_at'],
+            }, status=status.HTTP_201_CREATED)
+    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+ 

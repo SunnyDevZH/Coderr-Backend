@@ -94,7 +94,7 @@ class OfferSerializer(serializers.ModelSerializer):
     - Unterstützt die Erstellung und Aktualisierung von Angeboten.
     """
 
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, write_only=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
     user_details = serializers.SerializerMethodField()
     details = OfferDetailFullSerializer(many=True, read_only=True)
 

@@ -1,6 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group  # Importiere das Group-Modell
 from .models import User, Review  # Importiere das Review-Modell
+
+# Deregistriere das Group-Modell, um es aus dem Admin zu entfernen
+admin.site.unregister(Group)
 
 class UserAdmin(UserAdmin):
     model = User

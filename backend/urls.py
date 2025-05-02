@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/base-info/', BaseInfoView.as_view(), name='base-info'),
     path('api/reviews/', ReviewViewSet.as_view({'get': 'list', 'post': 'create'}), name='reviews'), 
+    path('api/', include('accounts.urls')),
 
     path('api/profile/<int:pk>/', UserViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update'}), name='profile'),
     path('api/profiles/business/', UserViewSet.as_view({'get': 'list_business'}), name='profiles-business'),

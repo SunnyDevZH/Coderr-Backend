@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 class User(AbstractUser):
     USER_TYPE_CHOICES = (
@@ -24,11 +25,24 @@ class User(AbstractUser):
         return self.id
 
 class Review(models.Model):
-    user = models.ForeignKey(User, related_name='reviews', on_delete=models.CASCADE)
-    rating = models.DecimalField(max_digits=2, decimal_places=1)
-    comment = models.TextField(blank=True, null=True)
+    business_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='received_reviews',
+        null=True,
+        blank=True
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='written_reviews',
+        null=True,
+        blank=True
+    )
+    rating = models.PositiveIntegerField()
+    description = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Review by {self.user.username} - {self.rating}"
+        return f"Review by {self.reviewer} for {self.business_user}"

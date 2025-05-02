@@ -153,45 +153,24 @@ class BaseInfoView(APIView):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet für die Verwaltung von Bewertungen (Reviews).
-    - Unterstützt CRUD-Operationen für Bewertungen.
-    - Enthält zusätzliche Filter- und Sortierfunktionen.
-    """
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [AllowAny]
-    pagination_class = None  # Deaktiviert die Paginierung
+    pagination_class = None
+
+    def perform_create(self, serializer):
+        serializer.save(reviewer=self.request.user)
 
     def get_queryset(self):
-        """
-        Gibt das Queryset zurück, das für die aktuelle Anfrage verwendet wird.
-        - Filtert nach `business_user_id`, falls angegeben.
-        - Sortiert die Ergebnisse basierend auf dem `ordering`-Parameter.
-        """
         queryset = super().get_queryset()
         business_user_id = self.request.query_params.get('business_user_id')
         ordering = self.request.query_params.get('ordering', '-updated_at')
-
         if business_user_id and business_user_id != 'undefined':
-            queryset = queryset.filter(user_id=business_user_id)
+            queryset = queryset.filter(business_user_id=business_user_id)
         return queryset.order_by(ordering)
 
     def list(self, request, *args, **kwargs):
-        """
-        GET /reviews/ - Gibt eine Liste aller Bewertungen zurück.
-        """
         queryset = self.get_queryset()
         serialized = self.get_serializer(queryset, many=True)
-        return Response(serialized.data)  # Gibt nur das Array zurück, ohne Wrapper
+        return Response(serialized.data)
 
-    @action(detail=False, methods=['post'])
-    def create_review(self, request):
-        """
-        POST /reviews/create_review/ - Erstellt eine neue Bewertung.
-        """
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

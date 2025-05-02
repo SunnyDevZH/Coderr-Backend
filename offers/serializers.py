@@ -87,15 +87,9 @@ class OfferListSerializer(serializers.ModelSerializer):
 
 
 class OfferSerializer(serializers.ModelSerializer):
-    """
-    Serializer für die vollständige Darstellung eines Angebots (Offer).
-    - Wird verwendet, um alle Details eines Angebots darzustellen.
-    - Unterstützt die Erstellung und Aktualisierung von Angeboten.
-    """
-
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
     user_details = serializers.SerializerMethodField()
-    details = OfferDetailFullSerializer(many=True, read_only=True)
+    details = OfferDetailFullSerializer(many=True)
 
     class Meta:
         model = Offer
@@ -105,13 +99,30 @@ class OfferSerializer(serializers.ModelSerializer):
         ]
 
     def get_user_details(self, obj):
-        """
-        Gibt die Benutzerdetails des Angebotsbesitzers zurück.
-        - Enthält den Vornamen, Nachnamen und Benutzernamen.
-        """
         user = obj.user
         return {
             "first_name": user.first_name or "Unbekannt",
             "last_name": user.last_name or "Unbekannt",
             "username": user.username
         }
+
+    def create(self, validated_data):
+        details_data = validated_data.pop('details', [])
+        offer = Offer.objects.create(**validated_data)
+
+        min_price = None
+        min_delivery_time = None
+
+        for detail_data in details_data:
+            detail = OfferDetail.objects.create(offer=offer, **detail_data)
+        
+            if min_price is None or detail.price < min_price:
+                min_price = detail.price
+            if min_delivery_time is None or detail.delivery_time_in_days < min_delivery_time:
+                min_delivery_time = detail.delivery_time_in_days
+
+        offer.min_price = min_price
+        offer.min_delivery_time = min_delivery_time
+        offer.save()
+
+        return offer

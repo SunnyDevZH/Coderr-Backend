@@ -2,11 +2,13 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 from .models import Offer, OfferDetail
 from .serializers import OfferSerializer, OfferDetailFullSerializer, OfferListSerializer
+
 
 class OfferViewSet(viewsets.ModelViewSet):
     queryset = Offer.objects.all()
@@ -24,7 +26,10 @@ class OfferViewSet(viewsets.ModelViewSet):
         return OfferSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        user = self.request.user
+        if not hasattr(user, 'profile') or getattr(user.profile, 'type', None) != 'business':
+            raise PermissionDenied("Only users with type 'business' can create offers.")
+        serializer.save(user=user)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -39,20 +44,17 @@ class OfferViewSet(viewsets.ModelViewSet):
 
         if min_price:
             try:
-                min_price = float(min_price)
-                queryset = queryset.filter(min_price__gte=min_price)
+                queryset = queryset.filter(min_price__gte=float(min_price))
             except ValueError:
                 pass
 
         if max_delivery_time:
             try:
-                max_delivery_time = int(max_delivery_time)
-                queryset = queryset.filter(min_delivery_time__lte=max_delivery_time)
+                queryset = queryset.filter(min_delivery_time__lte=int(max_delivery_time))
             except ValueError:
                 pass
 
         return queryset
-
 
     def create(self, request, *args, **kwargs):
         print("Request Data:", request.data)
@@ -64,6 +66,12 @@ class OfferViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.user != request.user:
+            return Response(
+                {"detail": "Nur der Ersteller darf dieses Angebot bearbeiten."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):

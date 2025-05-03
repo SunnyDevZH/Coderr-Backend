@@ -105,7 +105,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-    @action(detail=False, methods=['get'], url_path='business', permission_classes=[AllowAny])
+    @action(detail=False, methods=['get'], url_path='business', permission_classes=[IsAuthenticated])
     def list_business(self, request):
         """
         GET /profiles/business/ - Gibt eine Liste aller Geschäftsnutzer zurück.
@@ -114,7 +114,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = ProfileListSerializer(business_users, many=True)  # Verwenden des ProfileListSerializer
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'], url_path='customer', permission_classes=[AllowAny])
+    @action(detail=False, methods=['get'], url_path='customer', permission_classes=[IsAuthenticated])
     def list_customer(self, request):
         """
         GET /profiles/customer/ - Gibt eine Liste aller Kundenprofile zurück.

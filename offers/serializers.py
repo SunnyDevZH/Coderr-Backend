@@ -1,18 +1,12 @@
-from django.contrib.auth import get_user_model  # Verwende get_user_model statt User direkt zu importieren
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from .models import Offer, OfferDetail
 
-# Hole das benutzerdefinierte User-Modell
 User = get_user_model()
 
 
 class OfferDetailShortSerializer(serializers.ModelSerializer):
-    """
-    Serializer für die Kurzversion von Angebotsdetails (OfferDetail).
-    - Wird in der Angebotsliste verwendet, um nur die ID und die URL der Details darzustellen.
-    """
-
     url = serializers.SerializerMethodField()
 
     class Meta:
@@ -20,31 +14,15 @@ class OfferDetailShortSerializer(serializers.ModelSerializer):
         fields = ['id', 'url']
 
     def get_url(self, obj):
-        """
-        Gibt nur den relativen Pfad zur Detailansicht zurück (z. B. /offerdetails/1/),
-        wie in der API-Dokumentation gefordert.
-        """
         return f"/offerdetails/{obj.id}/"
 
 
 class OfferDetailFullSerializer(serializers.ModelSerializer):
-    """
-    Serializer für die vollständige Darstellung von Angebotsdetails (OfferDetail).
-    - Wird verwendet, um alle relevanten Felder eines Angebotsdetails darzustellen.
-    """
-
     class Meta:
         model = OfferDetail
         fields = ['id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
 
     def validate(self, data):
-        """
-        Validiert die Eingabedaten für ein Angebotsdetail.
-        - `offer_type`: Muss einer der Werte 'basic', 'standard' oder 'premium' sein.
-        - `delivery_time_in_days`: Muss eine positive Zahl sein.
-        - `revisions`: Muss -1 oder größer sein.
-        - `features`: Mindestens ein Feature muss angegeben werden.
-        """
         if data['offer_type'] not in ['basic', 'standard', 'premium']:
             raise ValidationError("Invalid offer type. Must be 'basic', 'standard', or 'premium'.")
         if data['delivery_time_in_days'] <= 0:
@@ -57,12 +35,6 @@ class OfferDetailFullSerializer(serializers.ModelSerializer):
 
 
 class OfferListSerializer(serializers.ModelSerializer):
-    """
-    Serializer für die Liste von Angeboten (Offer).
-    - Wird verwendet, um eine kompakte Darstellung von Angeboten zu liefern.
-    - Enthält grundlegende Felder und eine Kurzversion der Angebotsdetails.
-    """
-
     user_details = serializers.SerializerMethodField()
     details = OfferDetailShortSerializer(many=True, read_only=True)
 
@@ -74,10 +46,6 @@ class OfferListSerializer(serializers.ModelSerializer):
         ]
 
     def get_user_details(self, obj):
-        """
-        Gibt die Benutzerdetails des Angebotsbesitzers zurück.
-        - Enthält den Vornamen, Nachnamen und Benutzernamen.
-        """
         user = obj.user
         return {
             "first_name": user.first_name or "Unbekannt",
@@ -106,6 +74,15 @@ class OfferSerializer(serializers.ModelSerializer):
             "username": user.username
         }
 
+    def validate_details(self, value):
+        if len(value) != 3:
+            raise ValidationError("Exactly 3 offer details are required (basic, standard, premium).")
+        offer_types = {detail['offer_type'] for detail in value}
+        required_types = {'basic', 'standard', 'premium'}
+        if offer_types != required_types:
+            raise ValidationError(f"Offer must contain exactly one of each type: {', '.join(required_types)}.")
+        return value
+
     def create(self, validated_data):
         details_data = validated_data.pop('details', [])
         offer = Offer.objects.create(**validated_data)
@@ -115,7 +92,6 @@ class OfferSerializer(serializers.ModelSerializer):
 
         for detail_data in details_data:
             detail = OfferDetail.objects.create(offer=offer, **detail_data)
-        
             if min_price is None or detail.price < min_price:
                 min_price = detail.price
             if min_delivery_time is None or detail.delivery_time_in_days < min_delivery_time:
@@ -124,35 +100,35 @@ class OfferSerializer(serializers.ModelSerializer):
         offer.min_price = min_price
         offer.min_delivery_time = min_delivery_time
         offer.save()
-
         return offer
-    
+
     def update(self, instance, validated_data):
         details_data = validated_data.pop('details', None)
 
-        # Update die Felder des Offers
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # Wenn neue details übergeben wurden, ersetze die alten komplett
         if details_data is not None:
-            # Bestehende OfferDetails löschen
-            instance.details.all().delete()
-
-            min_price = None
-            min_delivery_time = None
-
             for detail_data in details_data:
-                detail = OfferDetail.objects.create(offer=instance, **detail_data)
+                offer_type = detail_data.get('offer_type')
+                if not offer_type:
+                    raise ValidationError("Jedes Detail muss ein 'offer_type'-Feld enthalten.")
 
-                if min_price is None or detail.price < min_price:
-                    min_price = detail.price
-                if min_delivery_time is None or detail.delivery_time_in_days < min_delivery_time:
-                    min_delivery_time = detail.delivery_time_in_days
+                try:
+                    detail = instance.details.get(offer_type=offer_type)
+                    for key, val in detail_data.items():
+                        setattr(detail, key, val)
+                    detail.save()
+                except OfferDetail.DoesNotExist:
+                    OfferDetail.objects.create(offer=instance, **detail_data)
 
-            instance.min_price = min_price
-            instance.min_delivery_time = min_delivery_time
+            # min_price / min_delivery_time neu berechnen
+            prices = [d.price for d in instance.details.all()]
+            times = [d.delivery_time_in_days for d in instance.details.all()]
+            instance.min_price = min(prices)
+            instance.min_delivery_time = min(times)
             instance.save()
 
         return instance
+

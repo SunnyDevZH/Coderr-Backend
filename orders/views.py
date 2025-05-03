@@ -54,6 +54,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
+        print(f"Aktuelle Anfrage von Benutzer ID {request.user.id}")
+        order = Order.objects.get(id=6)
+        print(f"customer_user: {order.customer_user.id}, business_user: {order.business_user.id}")
 
         if instance.customer_user != request.user and instance.business_user != request.user and not request.user.is_staff:
             print("Permission denied: User is not the customer, business user, or an admin.")

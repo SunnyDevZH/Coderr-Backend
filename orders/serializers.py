@@ -1,44 +1,39 @@
 from rest_framework import serializers
 from .models import Order
 from offers.models import OfferDetail
-from accounts.serializers import UserSerializer
-
 
 class OrderSerializer(serializers.ModelSerializer):
-    customer_user = serializers.PrimaryKeyRelatedField(read_only=True)
-    business_user = serializers.PrimaryKeyRelatedField(read_only=True)
-    offer_detail = serializers.PrimaryKeyRelatedField(
-        queryset=OfferDetail.objects.all(),
-        write_only=True,
-        required=True
-    )
+    """
+    Serializer für die Verwaltung von Bestellungen (Orders).
+    - Unterstützt die Erstellung von Bestellungen basierend auf einem OfferDetail.
+    - Stellt sicher, dass alle Felder standardmäßig schreibgeschützt sind.
+    """
+
+    offer_detail_id = serializers.PrimaryKeyRelatedField(queryset=OfferDetail.objects.all())  # Der Benutzer gibt nur die ID des OfferDetails an
+    customer_user = serializers.PrimaryKeyRelatedField(read_only=True)  # Wird automatisch gesetzt basierend auf dem authentifizierten Benutzer
+    business_user = serializers.PrimaryKeyRelatedField(read_only=True)  # Wird automatisch gesetzt basierend auf dem OfferDetail
 
     class Meta:
         model = Order
         fields = [
-            'id', 'customer_user', 'business_user', 'title', 'revisions',
-            'delivery_time_in_days', 'price', 'features', 'offer_type',
-            'status', 'created_at', 'updated_at', 'offer_detail'  # wichtig
-        ]
-        read_only_fields = [
-            'id', 'customer_user', 'business_user', 'title', 'revisions',
+            'id', 'customer_user', 'business_user', 'offer_detail_id', 'title', 'revisions',
             'delivery_time_in_days', 'price', 'features', 'offer_type',
             'status', 'created_at', 'updated_at'
         ]
-
+        read_only_fields = ['id', 'customer_user', 'business_user', 'status', 'created_at', 'updated_at']
 
     def create(self, validated_data):
         """
         Erstellt eine neue Bestellung basierend auf einem OfferDetail.
-        - `offer_detail`: Das Angebot, auf dem die Bestellung basiert.
-        - `customer_user`: Der Benutzer, der die Bestellung erstellt (aus dem Kontext).
+        - `offer_detail_id`: ID des Angebotsdetails, auf dem die Bestellung basiert.
+        - `customer_user`: Der authentifizierte Benutzer, der die Bestellung erstellt.
         - `business_user`: Der Benutzer, der das Angebot erstellt hat.
-
+        
         Validierte Daten werden mit den Informationen aus dem OfferDetail ergänzt.
         """
-        offer_detail = validated_data.get('offer_detail')
-        customer_user = self.context['request'].user
-        business_user = offer_detail.offer.user
+        offer_detail = validated_data.get('offer_detail_id')  # `offer_detail_id` anstelle von `offer_detail`
+        customer_user = self.context['request'].user  # Der authentifizierte Benutzer
+        business_user = offer_detail.offer.user  # Der Benutzer, der das Angebot erstellt hat (vom `Offer`-Modell)
 
         # Ergänze die validierten Daten mit den Details aus dem OfferDetail
         validated_data.update({
@@ -62,5 +57,5 @@ class OrderSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         # Sicherstellen, dass gewisse Felder Defaults liefern, falls sie fehlen
         representation['features'] = representation.get('features') or []
-        representation['status'] = representation.get('status') or 'unknown'
+        representation['status'] = representation.get('status') or 'in_progress'  # Standardstatus
         return representation

@@ -13,6 +13,14 @@ class OrderSerializer(serializers.ModelSerializer):
     customer_user = serializers.PrimaryKeyRelatedField(read_only=True)  # Wird automatisch gesetzt basierend auf dem authentifizierten Benutzer
     business_user = serializers.PrimaryKeyRelatedField(read_only=True)  # Wird automatisch gesetzt basierend auf dem OfferDetail
 
+    # Markiere die Felder, die aus dem OfferDetail übernommen werden, als read_only
+    title = serializers.CharField(read_only=True)
+    revisions = serializers.IntegerField(read_only=True)
+    delivery_time_in_days = serializers.IntegerField(read_only=True)
+    price = serializers.DecimalField(read_only=True, max_digits=10, decimal_places=2)
+    features = serializers.ListField(read_only=True)
+    offer_type = serializers.CharField(read_only=True)
+
     class Meta:
         model = Order
         fields = [
@@ -25,15 +33,13 @@ class OrderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """
         Erstellt eine neue Bestellung basierend auf einem OfferDetail.
-        - `offer_detail_id`: ID des Angebotsdetails, auf dem die Bestellung basiert.
-        - `customer_user`: Der authentifizierte Benutzer, der die Bestellung erstellt.
-        - `business_user`: Der Benutzer, der das Angebot erstellt hat.
-        
-        Validierte Daten werden mit den Informationen aus dem OfferDetail ergänzt.
         """
-        offer_detail = validated_data.get('offer_detail_id')  # `offer_detail_id` anstelle von `offer_detail`
-        customer_user = self.context['request'].user  # Der authentifizierte Benutzer
-        business_user = offer_detail.offer.user  # Der Benutzer, der das Angebot erstellt hat (vom `Offer`-Modell)
+        offer_detail = validated_data.pop('offer_detail_id')  # Hole das OfferDetail-Objekt
+        print("OfferDetail:", offer_detail)  # Debugging
+
+        # Hole den authentifizierten Benutzer und den Anbieter des Angebots
+        customer_user = self.context['request'].user
+        business_user = offer_detail.offer.user
 
         # Ergänze die validierten Daten mit den Details aus dem OfferDetail
         validated_data.update({
@@ -47,6 +53,10 @@ class OrderSerializer(serializers.ModelSerializer):
             'offer_type': offer_detail.offer_type,
         })
 
+        # Setze die ID des OfferDetail in die Daten
+        validated_data['offer_detail_id'] = offer_detail.id
+
+        # Erstelle die Bestellung
         return super().create(validated_data)
 
     def to_representation(self, instance):

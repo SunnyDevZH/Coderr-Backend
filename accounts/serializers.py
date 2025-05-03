@@ -85,7 +85,7 @@ class UserSerializer(serializers.ModelSerializer):
             'user', 'username', 'first_name', 'last_name', 'file', 'location',
             'tel', 'description', 'working_hours', 'type', 'email', 'created_at'
         ]
-        read_only_fields = ['pk', 'username', 'email', 'created_at']
+        read_only_fields = ['pk', 'username', 'created_at']
         extra_kwargs = {
             'first_name': {'required': False, 'allow_null': True, 'default': 'Unbekannt'},
             'last_name': {'required': False, 'allow_null': True, 'default': 'Unbekannt'},

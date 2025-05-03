@@ -22,8 +22,14 @@ class OfferViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return OfferListSerializer
+            return OfferListSerializer  # Für list() gibt es keinen Auth-Check
         return OfferSerializer
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:  # Für GET-Anfragen
+            return []  # Keine Berechtigungen erforderlich
+        return super().get_permissions()  # Für andere Aktionen bleibt es bei der Authentifizierung
+
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -76,8 +82,13 @@ class OfferViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        instance.details.all().delete()
-        instance.delete()
+        if instance.user != request.user:  # Überprüfen, ob der aktuelle Benutzer der Ersteller ist
+            return Response(
+                {"detail": "Nur der Ersteller darf dieses Angebot löschen."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        instance.details.all().delete()  # Löscht alle Details des Angebots
+        instance.delete()  # Löscht das Angebot selbst
         return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -85,7 +96,7 @@ class OfferDetailViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailFullSerializer
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [] 
 
     def retrieve(self, request, *args, **kwargs):
         print("Offer ID:", kwargs.get('pk'))

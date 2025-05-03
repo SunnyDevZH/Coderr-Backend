@@ -10,7 +10,6 @@ from offers.models import Offer
 from django.db.models import Avg
 from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer, ReviewSerializer, ProfileListSerializer
 from rest_framework.authtoken.models import Token
-from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 
@@ -38,7 +37,10 @@ class RegisterView(APIView):
                 'user_id': user.id,  # Benutzer-ID zurückgeben
                 'type': user.type  # Benutzer-Typ zurückgeben (falls vorhanden)
             }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            "detail": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginView(APIView):
@@ -56,6 +58,7 @@ class LoginView(APIView):
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(username=username, password=password)
+        
         if user:
             token, created = Token.objects.get_or_create(user=user)
             return Response({
@@ -65,7 +68,10 @@ class LoginView(APIView):
                 "user_id": user.id,
                 "type": user.type  # Benutzer-Typ hinzufügen
             }, status=status.HTTP_200_OK)
-        return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            "detail": ["Falsche Anmeldedaten."]
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -89,7 +95,9 @@ class UserViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         if request.user.id != instance.id and not request.user.is_staff:
-            return Response({"detail": "You do not have permission to edit this profile."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({
+                "detail": ["Du hast keine Berechtigung, dieses Profil zu bearbeiten."]
+            }, status=status.HTTP_403_FORBIDDEN)
 
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -155,22 +163,57 @@ class BaseInfoView(APIView):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     pagination_class = None
 
     def perform_create(self, serializer):
+        """
+        Setzt den aktuellen Benutzer als reviewer.
+        """
         serializer.save(reviewer=self.request.user)
 
     def get_queryset(self):
+        """
+        Filtert die Bewertungen nach den angegebenen Parametern.
+        """
         queryset = super().get_queryset()
         business_user_id = self.request.query_params.get('business_user_id')
         ordering = self.request.query_params.get('ordering', '-updated_at')
+        
         if business_user_id and business_user_id != 'undefined':
             queryset = queryset.filter(business_user_id=business_user_id)
+        
         return queryset.order_by(ordering)
 
     def list(self, request, *args, **kwargs):
+        """
+        GET /reviews/ - Ruft eine Liste aller Bewertungen ab.
+        """
         queryset = self.get_queryset()
         serialized = self.get_serializer(queryset, many=True)
         return Response(serialized.data)
 
+    def create(self, request, *args, **kwargs):
+        """
+        POST /reviews/ - Erstellt eine neue Bewertung.
+        """
+        if request.user.type != 'customer':
+            return Response({
+                "detail": ["Nur Kunden können Bewertungen erstellen."]
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # Überprüfen, ob der Benutzer bereits eine Bewertung für das Geschäftsprofil abgegeben hat
+        business_user_id = request.data.get('business_user')
+        if Review.objects.filter(business_user_id=business_user_id, reviewer=request.user).exists():
+            return Response({
+                "detail": ["Du hast bereits eine Bewertung für dieses Geschäftsprofil abgegeben."]
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Falls keine Fehler, Bewertung erstellen
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(reviewer=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({
+            "detail": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)

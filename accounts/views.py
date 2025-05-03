@@ -217,3 +217,28 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return Response({
             "detail": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        PATCH /reviews/<id>/ - Aktualisiert eine Bewertung.
+        """
+        review = self.get_object()
+        if review.reviewer != request.user:  # Nur der Ersteller der Bewertung darf diese bearbeiten
+            return Response({
+                "detail": ["Nur der Ersteller dieser Bewertung darf sie bearbeiten."]
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        DELETE /reviews/<id>/ - Löscht eine Bewertung.
+        """
+        review = self.get_object()
+        if review.reviewer != request.user:  # Nur der Ersteller der Bewertung darf sie löschen
+            return Response({
+                "detail": ["Nur der Ersteller dieser Bewertung darf sie löschen."]
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        return super().destroy(request, *args, **kwargs)
+

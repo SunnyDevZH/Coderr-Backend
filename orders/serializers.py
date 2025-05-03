@@ -5,23 +5,27 @@ from accounts.serializers import UserSerializer
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    """
-    Serializer für die Verwaltung von Bestellungen (Orders).
-    - Stellt sicher, dass alle Felder standardmäßig schreibgeschützt sind.
-    - Unterstützt die Erstellung von Bestellungen basierend auf einem OfferDetail.
-    """
-
     customer_user = serializers.PrimaryKeyRelatedField(read_only=True)
     business_user = serializers.PrimaryKeyRelatedField(read_only=True)
+    offer_detail = serializers.PrimaryKeyRelatedField(
+        queryset=OfferDetail.objects.all(),
+        write_only=True,
+        required=True
+    )
 
     class Meta:
         model = Order
         fields = [
             'id', 'customer_user', 'business_user', 'title', 'revisions',
             'delivery_time_in_days', 'price', 'features', 'offer_type',
+            'status', 'created_at', 'updated_at', 'offer_detail'  # wichtig
+        ]
+        read_only_fields = [
+            'id', 'customer_user', 'business_user', 'title', 'revisions',
+            'delivery_time_in_days', 'price', 'features', 'offer_type',
             'status', 'created_at', 'updated_at'
         ]
-        read_only_fields = fields  # Alle Felder sind standardmäßig schreibgeschützt
+
 
     def create(self, validated_data):
         """

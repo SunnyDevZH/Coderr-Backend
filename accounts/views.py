@@ -86,16 +86,16 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def partial_update(self, request, *args, **kwargs):
-        """
-        PATCH /profile/<int:pk>/ - Aktualisiert bestimmte Profildetails.
-        """
         instance = self.get_object()
-        if request.user != instance and not request.user.is_staff:
+
+        if request.user.id != instance.id and not request.user.is_staff:
             return Response({"detail": "You do not have permission to edit this profile."}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
 
     @action(detail=False, methods=['get'], url_path='business', permission_classes=[AllowAny])
     def list_business(self, request):

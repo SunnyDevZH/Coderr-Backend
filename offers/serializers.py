@@ -126,3 +126,33 @@ class OfferSerializer(serializers.ModelSerializer):
         offer.save()
 
         return offer
+    
+    def update(self, instance, validated_data):
+        details_data = validated_data.pop('details', None)
+
+        # Update die Felder des Offers
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Wenn neue details übergeben wurden, ersetze die alten komplett
+        if details_data is not None:
+            # Bestehende OfferDetails löschen
+            instance.details.all().delete()
+
+            min_price = None
+            min_delivery_time = None
+
+            for detail_data in details_data:
+                detail = OfferDetail.objects.create(offer=instance, **detail_data)
+
+                if min_price is None or detail.price < min_price:
+                    min_price = detail.price
+                if min_delivery_time is None or detail.delivery_time_in_days < min_delivery_time:
+                    min_delivery_time = detail.delivery_time_in_days
+
+            instance.min_price = min_price
+            instance.min_delivery_time = min_delivery_time
+            instance.save()
+
+        return instance

@@ -28,18 +28,31 @@ class OfferViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        creator_id = self.request.query_params.get('creator_id')
-        min_price = self.request.query_params.get('min_price')
-        search = self.request.query_params.get('search')
+        params = self.request.query_params
+
+        creator_id = params.get('creator_id')
+        min_price = params.get('min_price')
+        max_delivery_time = params.get('max_delivery_time')
 
         if creator_id:
             queryset = queryset.filter(user_id=creator_id)
+
         if min_price:
-            queryset = queryset.filter(details__price__gte=min_price)
-        if search:
-            queryset = queryset.filter(title__icontains=search)
+            try:
+                min_price = float(min_price)
+                queryset = queryset.filter(min_price__gte=min_price)
+            except ValueError:
+                pass
+
+        if max_delivery_time:
+            try:
+                max_delivery_time = int(max_delivery_time)
+                queryset = queryset.filter(min_delivery_time__lte=max_delivery_time)
+            except ValueError:
+                pass
 
         return queryset
+
 
     def create(self, request, *args, **kwargs):
         print("Request Data:", request.data)

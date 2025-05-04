@@ -7,9 +7,9 @@ User = get_user_model()
 
 class UserNestedSerializer(serializers.ModelSerializer):
     """
-    Verschachtelter Serializer für Benutzer.
-    - Wird in Listenansichten von Kunden- oder Business-Profilen verwendet.
-    - Zeigt grundlegende Informationen wie ID, Benutzername, Vor- und Nachname an.
+    Nested serializer for user details.
+    - Used in list views of customer or business profiles.
+    - Displays basic information such as ID, username, first name, and last name.
     """
 
     class Meta:
@@ -19,42 +19,42 @@ class UserNestedSerializer(serializers.ModelSerializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """
-    Serializer für die Benutzerregistrierung.
-    - Erstellt einen neuen Benutzer basierend auf den übermittelten Daten.
-    - Validiert die Eingabedaten und speichert den Benutzer.
+    Serializer for user registration.
+    - Creates a new user based on the provided data.
+    - Validates the input data and saves the user.
     """
     password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'email', 'type']  # Passe die Felder an dein Modell an
+        fields = ['username', 'password', 'email', 'type']  
 
     def create(self, validated_data):
         """
-        Erstellt einen neuen Benutzer mit den validierten Daten.
-        - Das Passwort wird sicher gespeichert.
+        Creates a new user with the validated data.
+        - Ensures the password is securely stored.
         """
         user = User.objects.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
             email=validated_data.get('email'),
-            type=validated_data.get('type', 'customer')  # Standardwert 'customer'
+            type=validated_data.get('type', 'customer')  # Default type is 'customer'
         )
         return user
 
 
 class LoginSerializer(serializers.Serializer):
     """
-    Serializer für die Benutzeranmeldung.
-    - Validiert die Anmeldedaten (Benutzername und Passwort).
+    Serializer for user login.
+    - Validates login credentials (username and password).
     """
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
         """
-        Validiert die Anmeldedaten.
-        - Überprüft, ob der Benutzername und das Passwort korrekt sind.
+        Validates the login credentials.
+        - Checks if the username and password are correct.
         """
         username = data.get('username')
         password = data.get('password')
@@ -65,19 +65,19 @@ class LoginSerializer(serializers.Serializer):
                 if user.is_active:
                     return user
                 else:
-                    raise serializers.ValidationError("Benutzerkonto ist deaktiviert.")
+                    raise serializers.ValidationError("User account is deactivated.")
             else:
-                raise serializers.ValidationError("Ungültige Anmeldedaten.")
+                raise serializers.ValidationError("Invalid login credentials.")
         else:
-            raise serializers.ValidationError("Beide Felder müssen ausgefüllt werden.")
+            raise serializers.ValidationError("Both fields must be filled out.")
 
 
 class UserSerializer(serializers.ModelSerializer):
     """
-    Serializer für die Benutzerverwaltung.
-    - Wird verwendet, um Benutzerdetails anzuzeigen und zu aktualisieren.
+    Serializer for user management.
+    - Used to display and update user details.
     """
-    user = serializers.IntegerField(source='id', read_only=True)  # Alias für `id`
+    user = serializers.IntegerField(source='id', read_only=True) 
 
     class Meta:
         model = User
@@ -87,65 +87,64 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['pk', 'username', 'created_at']
         extra_kwargs = {
-            'first_name': {'required': False, 'allow_null': True, 'default': 'Unbekannt'},
-            'last_name': {'required': False, 'allow_null': True, 'default': 'Unbekannt'},
-            'file': {'required': False, 'allow_null': True, 'default': 'keine_datei'},
-            'location': {'required': False, 'allow_null': True, 'default': 'keine_Adresse'},
-            'tel': {'required': False, 'allow_null': True, 'default': 'keine_Telefonnummer'},
-            'description': {'required': False, 'allow_null': True, 'default': 'keine_Beschreibung'},
-            'working_hours': {'required': False, 'allow_null': True, 'default': 'keine_Arbeitszeiten'},
+            'first_name': {'required': False, 'allow_null': True, 'default': 'Unknown'},
+            'last_name': {'required': False, 'allow_null': True, 'default': 'Unknown'},
+            'file': {'required': False, 'allow_null': True, 'default': 'no_file'},
+            'location': {'required': False, 'allow_null': True, 'default': 'no_address'},
+            'tel': {'required': False, 'allow_null': True, 'default': 'no_phone_number'},
+            'description': {'required': False, 'allow_null': True, 'default': 'no_description'},
+            'working_hours': {'required': False, 'allow_null': True, 'default': 'no_working_hours'},
         }
 
 
 class ProfileListSerializer(serializers.ModelSerializer):
     """
-    Serializer für die Liste von Benutzerprofilen.
-    - Wird verwendet, um grundlegende Informationen über Benutzer anzuzeigen.
-    - Enthält verschachtelte Benutzerinformationen.
+    Serializer for listing user profiles.
+    - Used to display basic information about users.
+    - Includes nested user information.
     """
-    user = serializers.SerializerMethodField()  # Benutzerinformationen verschachteln
+    user = serializers.SerializerMethodField()  
 
     class Meta:
         model = User
         fields = [
-            'user',  # Verschachteltes User-Objekt
+            'user',  
             'file', 'location', 'tel', 'description',
             'working_hours', 'type'
         ]
 
     def get_user(self, obj):
         """
-        Gibt die verschachtelten Benutzerinformationen zurück.
-        - Enthält ID, Benutzername, Vor- und Nachname.
+        Returns nested user information.
+        - Includes ID, username, first name, and last name.
         """
         return {
             'pk': getattr(obj, 'pk', None),
-            'username': getattr(obj, 'username', "Unbekannt") or "Unbekannt",
-            'first_name': getattr(obj, 'first_name', "Unbekannt") or "Unbekannt",
-            'last_name': getattr(obj, 'last_name', "Unbekannt") or "Unbekannt"
+            'username': getattr(obj, 'username', "Unknown") or "Unknown",
+            'first_name': getattr(obj, 'first_name', "Unknown") or "Unknown",
+            'last_name': getattr(obj, 'last_name', "Unknown") or "Unknown"
         }
 
     def to_representation(self, instance):
         """
-        Überschreibt die Standard-Darstellung eines Profils.
-        - Setzt Standardwerte für Felder, die null sind.
+        Overrides the default representation of a profile.
+        - Sets default values for fields that are null.
         """
         representation = super().to_representation(instance)
 
-        # Überprüfen und Standardwerte setzen, falls null
-        representation['file'] = representation.get('file') if representation.get('file') is not None else 'keine_datei'
-        representation['location'] = representation.get('location') if representation.get('location') is not None else 'keine_Adresse'
-        representation['tel'] = representation.get('tel') if representation.get('tel') is not None else 'keine_Telefonnummer'
-        representation['description'] = representation.get('description') if representation.get('description') is not None else 'keine_Beschreibung'
-        representation['working_hours'] = representation.get('working_hours') if representation.get('working_hours') is not None else 'keine_Arbeitszeiten'
+        representation['file'] = representation.get('file') if representation.get('file') is not None else 'no_file'
+        representation['location'] = representation.get('location') if representation.get('location') is not None else 'no_address'
+        representation['tel'] = representation.get('tel') if representation.get('tel') is not None else 'no_phone_number'
+        representation['description'] = representation.get('description') if representation.get('description') is not None else 'no_description'
+        representation['working_hours'] = representation.get('working_hours') if representation.get('working_hours') is not None else 'no_working_hours'
 
         return representation
 
 
 class ReviewSerializer(serializers.ModelSerializer):
     """
-    Serializer für die Verwaltung von Bewertungen (Reviews).
-    - Unterstützt die Erstellung und Anzeige von Bewertungen.
+    Serializer for managing reviews.
+    - Supports creating and displaying reviews.
     """
     class Meta:
         model = Review

@@ -22,18 +22,19 @@ class OfferViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return OfferListSerializer  # Für list() gibt es keinen Auth-Check
+            return OfferListSerializer  
         return OfferSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:  # Für GET-Anfragen
-            return []  # Keine Berechtigungen erforderlich
-        return super().get_permissions()  # Für andere Aktionen bleibt es bei der Authentifizierung
+        if self.action in ['list', 'retrieve']:  
+            return [] 
+        return super().get_permissions()  
 
 
     def perform_create(self, serializer):
         user = self.request.user
-        if not hasattr(user, 'profile') or getattr(user.profile, 'type', None) != 'business':
+        print("User type is:", getattr(user, 'type', None))
+        if getattr(user, 'type', None) != 'business':
             raise PermissionDenied("Only users with type 'business' can create offers.")
         serializer.save(user=user)
 

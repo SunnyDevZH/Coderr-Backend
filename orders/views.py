@@ -23,7 +23,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Filtert Bestellungen basierend auf den Query-Parametern.
+        Filters orders based on the query parameters.
         """
         queryset = super().get_queryset()
         customer_user_id = self.request.query_params.get('customer_user_id')
@@ -43,10 +43,10 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """
-        Erstellt eine neue Bestellung.
+        Creates a new order.
         """
         data = request.data
-        data['customer_user'] = request.user.id  # Setzt den authentifizierten Benutzer als Kunden
+        data['customer_user'] = request.user.id 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -68,7 +68,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """
-        Löscht eine Bestellung. Nur Admins können Bestellungen löschen.
+        Deletes an order. Only admins are allowed to delete orders.
         """
         if not request.user.is_staff:
             return Response({"detail": "Only admins can delete orders."}, status=status.HTTP_403_FORBIDDEN)
@@ -77,7 +77,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='order-count/(?P<business_user_id>[^/.]+)')
     def order_count(self, request, business_user_id=None):
         """
-        Gibt die Anzahl der laufenden Bestellungen (Status: in_progress) eines Geschäftsnutzers zurück.
+        Returns the number of ongoing orders (status: in_progress) for a business user.
         """
         business_user = get_object_or_404(User, pk=business_user_id)
         order_count = Order.objects.filter(business_user=business_user, status='in_progress').count()
@@ -86,7 +86,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='completed-order-count/(?P<business_user_id>[^/.]+)')
     def completed_order_count(self, request, business_user_id=None):
         """
-        Gibt die Anzahl der abgeschlossenen Bestellungen (Status: completed) eines Geschäftsnutzers zurück.
+        Returns the number of completed orders (status: completed) for a business user.
         """
         business_user = get_object_or_404(User, pk=business_user_id)
         completed_order_count = Order.objects.filter(business_user=business_user, status='completed').count()
@@ -94,43 +94,45 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         """
-        Überschreibt die Standard-List-Methode, um sicherzustellen, dass die Antwort immer ein Array ist.
+        Overrides the default list method to ensure the response is always an array.
         """
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 class CustomerOrdersView(APIView):
-    authentication_classes = [TokenAuthentication]  # TokenAuthentication verwenden
+    authentication_classes = [TokenAuthentication]  
     permission_classes = [IsAuthenticated]
-
+    """
+    Returns all orders placed by the currently authenticated customer.
+    """
     def get(self, request):
         orders = Order.objects.filter(customer_user=request.user)
         if not orders.exists():
-            return Response({"orders": [], "message": "Keine Bestellungen gefunden."})
+            return Response({"orders": [], "message": "No orders found."})
         serializer = OrderSerializer(orders, many=True)
         return Response({"orders": serializer.data})
 
-class OrderCountView(APIView):
-    authentication_classes = [TokenAuthentication]  # TokenAuthentication verwenden
-    permission_classes = [AllowAny]
 
+class OrderCountView(APIView):
+    authentication_classes = [TokenAuthentication]  
+    permission_classes = [AllowAny]
+    """
+    Returns the number of active orders (status: in_progress) for a given business user.
+    """
     def get(self, request, business_user_id):
-        """
-        Gibt die Anzahl der laufenden Bestellungen (Status: in_progress) eines Geschäftsnutzers zurück.
-        """
         business_user = get_object_or_404(User, pk=business_user_id)
         order_count = Order.objects.filter(business_user=business_user, status='in_progress').count()
         return Response({"order_count": order_count})
 
-class CompletedOrderCountView(APIView):
-    authentication_classes = [TokenAuthentication]  # TokenAuthentication verwenden
-    permission_classes = [AllowAny]
 
+class CompletedOrderCountView(APIView):
+    authentication_classes = [TokenAuthentication] 
+    permission_classes = [AllowAny]
+    """
+    #Returns the number of completed orders (status: completed) for a given business user.
+    """
     def get(self, request, business_user_id):
-        """
-        Gibt die Anzahl der abgeschlossenen Bestellungen (Status: completed) eines Geschäftsnutzers zurück.
-        """
         business_user = get_object_or_404(User, pk=business_user_id)
         completed_order_count = Order.objects.filter(business_user=business_user, status='completed').count()
         return Response({"completed_order_count": completed_order_count})

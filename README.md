@@ -4,51 +4,61 @@ Dies ist das Backend für das **Coderr-Projekt**, ein Django-basiertes System, d
 
 ---
 
-## 🚀 Features
+## 🚀 Funktionen
 
-- **Benutzerverwaltung**: Registrierung, Authentifizierung und Profilerstellung.
-- **Angebotsverwaltung**: CRUD-Operationen für Angebote und Angebotsdetails.
-- **Filter- und Suchfunktionen**: Unterstützung für Filterung, Suche und Sortierung von Angeboten.
-- **Paginierung**: Paginierte API-Antworten für eine bessere Benutzererfahrung.
-- **Sichere API**: Token-basierte Authentifizierung mit Django REST Framework.
-
----
-
-## 🛠️ Voraussetzungen
-
-Stelle sicher, dass die folgenden Tools installiert sind:
-
-- **Python**: Version 3.12 oder höher
-- **Django**: Version 5.1.1
-- **SQLite**: Standardmäßig in Django enthalten (oder ein anderes Datenbanksystem deiner Wahl)
+- Benutzerverwaltung: Registrierung, Authentifizierung und Profilerstellung.
+- Angebotsverwaltung: CRUD-Operationen für Angebote und Angebotsdetails.
+- Filter- und Suchfunktionen: Unterstützung für Filterung, Suche und Sortierung von Angeboten.
+- Paginierung: Paginierte API-Antworten für eine bessere Benutzererfahrung.
+- Sichere API: Token-basierte Authentifizierung mit Django REST Framework.
 
 ---
 
-## 📦 Installation
+## 🛠️ Technologie
 
-1. **Repository klonen**:
-   ```sh
-   git clone <repository-url>
-   cd coderr-backend
+- **Python**: Programmiersprache
+- **Django**: Web-Framework
+- **Django REST Framework**: API-Entwicklung
+- **SQLite**: Datenbank
+- **Auth Token**: Authentifizierung über Token-System 
 
-2. **Virtuele Umgebung erstelle und aktivieren**:
+---
 
-python3 -m venv venv source venv/bin/activate für Mac 
+## ⚙️ Installation
 
-venv\Scripts\activate für Windows
-
-3. **Abhängigkeiten installieren**:
-
+### 1. Repository klonen
+```bash
+git clone https://github.com/SunnyDevZH/Coderr-Backend
+```
+```bash
+cd Backend
+```
+### 2. Virtuelle Umgebung anlegen & aktivieren
+```bash
+python3 -m venv env
+```
+```bash
+source env/bin/activate
+```
+### 3. Abhängigkeiten installieren
+```bash
 pip3 install -r requirements.txt
-
-4. **Datenbank migrieren**:
-
+```
+### 4. Migrationen ausführen
+```bash
 python3 manage.py migrate
-
-5. **Superuser erstellen**:
-
-python3 manage.py createsuperuser
-
-6. **Entwicklungsserver starten**:
-
+```
+### 5. Entwicklungsserver starten
+```bash
 python3 manage.py runserver
+```
+### 6. Anwendung im Browser öffnen
+```bash
+http://localhost:8000/admin
+```
+### 7. Superuser anlegen
+```bash
+python3 manage.py createsuperuser
+```
+
+

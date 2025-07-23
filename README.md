@@ -31,7 +31,7 @@ Dies ist das Backend für das **Coderr-Projekt**, ein Django-basiertes System, d
 git clone https://github.com/SunnyDevZH/Coderr-Backend
 ```
 ```bash
-cd Backend
+cd Codder-Backend
 ```
 ### 2. Virtuelle Umgebung anlegen & aktivieren
 ```bash
